@@ -1,0 +1,94 @@
+/* ============================================================
+   mentee.css — Role-specific styles for mentee.html
+   Accent colour: Green #10b981
+   ============================================================ */
+
+:root {
+  --accent: #10b981;
+}
+
+/* Role badge colour */
+.sidebar-role-badge {
+  background: rgba(5, 150, 105, 0.3);
+  color: #6ee7b7;
+}
+
+/* Active nav item */
+.sidebar-link.active {
+  background: rgba(5, 150, 105, 0.15);
+  color: #fff;
+  border-left: 2px solid var(--accent);
+}
+
+/* Profile card */
+.profile-card {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 1.75rem 2rem;
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.profile-avatar {
+  width: 56px;
+  height: 56px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 1.2rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.profile-info {
+  flex: 1;
+}
+
+.profile-name {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 0.2rem;
+}
+
+.profile-id {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  margin-bottom: 1rem;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem 1.5rem;
+}
+
+.profile-field-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.15rem;
+}
+
+.profile-field-value {
+  font-size: 0.875rem;
+  color: var(--ink);
+}
+
+/* Meeting request card */
+.request-card {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 1.75rem 2rem;
+}

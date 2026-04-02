@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MMS – Login</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="../static/base.css"/>
+  <link rel="stylesheet" href="../static/login.css"/>
+</head>
+<body>
+
+  <div class="login-wrapper">
+
+    <p class="institution-tag">SSN College of Engineering</p>
+    <h1 class="login-title">Mentoring<br>Management System</h1>
+    <p class="login-subtitle">Sign in to access your dashboard</p>
+
+    <div class="login-card">
+      <form method="POST" action="/login">
+
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" class="form-control" id="password" name="password" placeholder="••••••••" required/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="role">Role</label>
+          <select class="form-select" id="role" name="role" required>
+            <option value="" disabled selected>Select your role</option>
+            <option value="mentor">Mentor</option>
+            <option value="mentee">Mentee</option>
+            <option value="manager">Manager</option>
+          </select>
+        </div>
+
+        <hr class="divider"/>
+        <button type="submit" class="btn-login">Sign In →</button>
+
+      </form>
+    </div>
+
+    <p class="footer-note">IT Department · Academic Year 2025–26</p>
+
+  </div>
+
+</body>
+</html>

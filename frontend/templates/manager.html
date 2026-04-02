@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MMS – Manager Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="../static/base.css"/>
+  <link rel="stylesheet" href="../static/manager.css"/>
+</head>
+<body>
+
+  <div class="app-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <p class="sidebar-brand-tag">SSN College of Engg.</p>
+        <p class="sidebar-brand-name">Mentoring<br>Management</p>
+        <span class="sidebar-role-badge">Manager</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <p class="sidebar-section-label">Overview</p>
+        <a href="#overview" class="sidebar-link active">
+          <span class="icon">◈</span> Summary
+        </a>
+        <a href="#records" class="sidebar-link">
+          <span class="icon">○</span> View Records
+        </a>
+
+        <p class="sidebar-section-label">Reports</p>
+        <a href="#reports" class="sidebar-link">
+          <span class="icon">◻</span> Generate Reports
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="/logout">↩ Logout</a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="main-content">
+
+      <div class="topbar">
+        <span class="topbar-title">Manager Dashboard</span>
+        <span class="topbar-meta">IT Department &nbsp;·&nbsp; AY 2025–26</span>
+      </div>
+
+      <div class="page-body">
+
+        <!-- Summary Stats -->
+        <div id="overview">
+          <div class="row g-3 mb-2">
+            <div class="col-md-3">
+              <div class="stat-card">
+                <p class="stat-label">Total Mentors</p>
+                <p class="stat-value">8</p>
+                <p class="stat-sub">All active</p>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="stat-card">
+                <p class="stat-label">Total Mentees</p>
+                <p class="stat-value">96</p>
+                <p class="stat-sub">Across III &amp; IV year</p>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="stat-card">
+                <p class="stat-label">Meetings This Month</p>
+                <p class="stat-value">42</p>
+                <p class="stat-sub">↑ 12% from last month</p>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="stat-card">
+                <p class="stat-label">Flagged Students</p>
+                <p class="stat-value">7</p>
+                <p class="stat-sub">Attendance / CGPA alerts</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mentor Records Table -->
+        <div id="records">
+          <div class="section-header">
+            <span class="section-title">Mentor Summary</span>
+            <a href="#reports" class="btn-sm-outline">Export →</a>
+          </div>
+
+          <div class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mentor</th>
+                  <th>Designation</th>
+                  <th>Mentees</th>
+                  <th>Meetings (Apr)</th>
+                  <th>Pending</th>
+                  <th>Coverage</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Dr. S. Ramesh</td>
+                  <td>Professor</td>
+                  <td>12</td>
+                  <td>7</td>
+                  <td>2</td>
+                  <td>
+                    <div class="mini-bar"><div class="mini-bar-fill" style="width:85%"></div></div>
+                    <span class="mini-bar-label">85%</span>
+                  </td>
+                  <td><span class="badge-status badge-good">Active</span></td>
+                </tr>
+                <tr>
+                  <td>Dr. P. Kavitha</td>
+                  <td>Assoc. Professor</td>
+                  <td>12</td>
+                  <td>5</td>
+                  <td>4</td>
+                  <td>
+                    <div class="mini-bar"><div class="mini-bar-fill" style="width:62%"></div></div>
+                    <span class="mini-bar-label">62%</span>
+                  </td>
+                  <td><span class="badge-status badge-warn">Review</span></td>
+                </tr>
+                <tr>
+                  <td>Mr. R. Arun</td>
+                  <td>Asst. Professor</td>
+                  <td>12</td>
+                  <td>9</td>
+                  <td>0</td>
+                  <td>
+                    <div class="mini-bar"><div class="mini-bar-fill" style="width:100%"></div></div>
+                    <span class="mini-bar-label">100%</span>
+                  </td>
+                  <td><span class="badge-status badge-good">Active</span></td>
+                </tr>
+                <tr>
+                  <td>Dr. S. Nithya</td>
+                  <td>Professor</td>
+                  <td>12</td>
+                  <td>2</td>
+                  <td>6</td>
+                  <td>
+                    <div class="mini-bar"><div class="mini-bar-fill" style="width:30%"></div></div>
+                    <span class="mini-bar-label">30%</span>
+                  </td>
+                  <td><span class="badge-status badge-alert">Lagging</span></td>
+                </tr>
+                <tr>
+                  <td>Mr. V. Kumar</td>
+                  <td>Asst. Professor</td>
+                  <td>12</td>
+                  <td>6</td>
+                  <td>1</td>
+                  <td>
+                    <div class="mini-bar"><div class="mini-bar-fill" style="width:78%"></div></div>
+                    <span class="mini-bar-label">78%</span>
+                  </td>
+                  <td><span class="badge-status badge-good">Active</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Flagged Mentees -->
+        <div>
+          <div class="section-header">
+            <span class="section-title">Flagged Mentees</span>
+          </div>
+
+          <div class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Roll No.</th>
+                  <th>Mentor</th>
+                  <th>CGPA</th>
+                  <th>Attendance</th>
+                  <th>Flag Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Naveen Kumar T.</td>
+                  <td>311521104028</td>
+                  <td>Dr. S. Ramesh</td>
+                  <td>7.4</td>
+                  <td>68%</td>
+                  <td><span class="badge-status badge-warn">Low Attendance</span></td>
+                </tr>
+                <tr>
+                  <td>Sanjay M.</td>
+                  <td>311521104039</td>
+                  <td>Dr. P. Kavitha</td>
+                  <td>5.9</td>
+                  <td>72%</td>
+                  <td><span class="badge-status badge-alert">Low CGPA</span></td>
+                </tr>
+                <tr>
+                  <td>Ritu A.</td>
+                  <td>311521104041</td>
+                  <td>Mr. R. Arun</td>
+                  <td>6.2</td>
+                  <td>65%</td>
+                  <td><span class="badge-status badge-alert">Both</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Generate Reports -->
+        <div id="reports">
+          <div class="section-header">
+            <span class="section-title">Generate Reports</span>
+          </div>
+
+          <div class="report-card">
+            <div class="report-type">
+              <div>
+                <p class="report-name">Monthly Meeting Summary</p>
+                <p class="report-desc">All mentor–mentee meetings for the current month</p>
+              </div>
+              <a href="/reports/monthly" class="btn-sm-accent">Generate</a>
+            </div>
+            <div class="report-type">
+              <div>
+                <p class="report-name">Mentor Activity Report</p>
+                <p class="report-desc">Meeting coverage and pending counts per mentor</p>
+              </div>
+              <a href="/reports/mentor-activity" class="btn-sm-accent">Generate</a>
+            </div>
+            <div class="report-type">
+              <div>
+                <p class="report-name">Flagged Students Report</p>
+                <p class="report-desc">Students with low CGPA or poor attendance</p>
+              </div>
+              <a href="/reports/flagged" class="btn-sm-accent">Generate</a>
+            </div>
+            <div class="report-type">
+              <div>
+                <p class="report-name">Full Department Export</p>
+                <p class="report-desc">All records — mentors, mentees, meetings (CSV)</p>
+              </div>
+              <a href="/reports/export-csv" class="btn-sm-outline">Download CSV</a>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /page-body -->
+    </div><!-- /main-content -->
+
+  </div><!-- /app-wrapper -->
+
+</body>
+</html>

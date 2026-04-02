@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MMS – Mentor Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="../static/base.css"/>
+  <link rel="stylesheet" href="../static/mentor.css"/>
+</head>
+<body>
+
+  <div class="app-wrapper">
+
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <p class="sidebar-brand-tag">SSN College of Engg.</p>
+        <p class="sidebar-brand-name">Mentoring<br>Management</p>
+        <span class="sidebar-role-badge">Mentor</span>
+      </div>
+      <nav class="sidebar-nav">
+        <p class="sidebar-section-label">Mentees</p>
+        <a href="#mentees" class="sidebar-link active"><span class="icon">◈</span> View Mentees</a>
+        <a href="#add" class="sidebar-link"><span class="icon">+</span> Add Mentee</a>
+        <p class="sidebar-section-label">Schedule</p>
+        <a href="#meetings" class="sidebar-link"><span class="icon">○</span> Meetings</a>
+        <a href="#notes" class="sidebar-link"><span class="icon">◻</span> Notes</a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="/logout">↩ Logout</a>
+      </div>
+    </aside>
+
+    <div class="main-content">
+
+      <div class="topbar">
+        <span class="topbar-title">Dashboard</span>
+        <span class="topbar-meta">{{ current_user.name }} &nbsp;·&nbsp; Dept. of IT</span>
+      </div>
+
+      <div class="page-body">
+
+        <!-- Stats -->
+        <div class="row g-3 mb-2">
+          <div class="col-md-3">
+            <div class="stat-card">
+              <p class="stat-label">Total Mentees</p>
+              <p class="stat-value">{{ stats.total_mentees }}</p>
+              <p class="stat-sub">Assigned this year</p>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card">
+              <p class="stat-label">Meetings This Month</p>
+              <p class="stat-value">{{ stats.meetings_month }}</p>
+              <p class="stat-sub">{{ stats.upcoming }} upcoming</p>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card">
+              <p class="stat-label">Pending Requests</p>
+              <p class="stat-value">{{ stats.pending }}</p>
+              <p class="stat-sub">Awaiting confirmation</p>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card">
+              <p class="stat-label">Notes Logged</p>
+              <p class="stat-value">{{ stats.notes }}</p>
+              <p class="stat-sub">Across all mentees</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mentee List -->
+        <div id="mentees">
+          <div class="section-header">
+            <span class="section-title">Mentee List</span>
+            <a href="/add-mentee" class="btn-sm-accent">+ Add Mentee</a>
+          </div>
+          <div class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Roll No.</th>
+                  <th>Year</th>
+                  <th>CGPA</th>
+                  <th>Status</th>
+                  <th>Last Meeting</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for mentee in mentees %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td>{{ mentee.name }}</td>
+                  <td>{{ mentee.roll_no }}</td>
+                  <td>{{ mentee.year }}</td>
+                  <td>{{ mentee.cgpa }}</td>
+                  <td><span class="badge-status badge-{{ mentee.status_class }}">{{ mentee.status }}</span></td>
+                  <td>{{ mentee.last_meeting }}</td>
+                  <td>
+                    <a href="/mentee/{{ mentee.id }}" class="action-link">View</a>
+                    <a href="/mentee/{{ mentee.id }}/note" class="action-link">Note</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Upcoming Meetings -->
+        <div id="meetings">
+          <div class="section-header">
+            <span class="section-title">Upcoming Meetings</span>
+            <a href="/schedule-meeting" class="btn-sm-outline">Schedule New</a>
+          </div>
+          <div class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mentee</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Mode</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for meeting in meetings %}
+                <tr>
+                  <td>{{ meeting.mentee_name }}</td>
+                  <td>{{ meeting.date }}</td>
+                  <td>{{ meeting.time }}</td>
+                  <td>{{ meeting.mode }}</td>
+                  <td><span class="badge-status badge-{{ meeting.status_class }}">{{ meeting.status }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

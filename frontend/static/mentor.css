@@ -1,0 +1,21 @@
+/* ============================================================
+   mentor.css — Role-specific styles for mentor.html
+   Accent colour: Blue #1d4ed8
+   ============================================================ */
+
+:root {
+  --accent: #1d4ed8;
+}
+
+/* Role badge colour */
+.sidebar-role-badge {
+  background: rgba(29, 78, 216, 0.35);
+  color: #93c5fd;
+}
+
+/* Active nav item */
+.sidebar-link.active {
+  background: rgba(29, 78, 216, 0.2);
+  color: #fff;
+  border-left: 2px solid var(--accent);
+}
