@@ -129,3 +129,13 @@ body::before {
   text-align: center;
   margin-top: 1.5rem;
 }
+.login-error {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 3px;
+  padding: 0.55rem 0.85rem;
+  margin-bottom: 1.25rem;
+}

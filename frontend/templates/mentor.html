@@ -3,152 +3,458 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MMS – Mentor Dashboard</title>
+  <title>MMS – Mentor</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="../static/base.css"/>
   <link rel="stylesheet" href="../static/mentor.css"/>
 </head>
 <body>
 
-  <div class="app-wrapper">
+<div class="shell">
 
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <p class="sidebar-brand-tag">SSN College of Engg.</p>
-        <p class="sidebar-brand-name">Mentoring<br>Management</p>
-        <span class="sidebar-role-badge">Mentor</span>
+  <!-- ══════════════ TOP NAVBAR ══════════════ -->
+  <header class="navbar">
+  <div class="navbar-left">
+    <div class="nav-logo">M</div>
+    <div>
+      <p class="nav-title">MentorSpace</p>
+      <p class="nav-sub">SSN College of Engineering</p>
+    </div>
+  </div>
+
+  <div class="navbar-right">
+    <button class="icon-btn" title="Notifications">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+    </button>
+    
+    <div class="profile-dropdown">
+      <div class="nav-avatar" onclick="toggleDropdown()">{{ current_user.initials }}</div>
+      <div class="dropdown-content" id="profileMenu">
+        <div class="dropdown-header">
+          <p class="user-name">Varun</p> <p class="user-role">Mentor</p>
+        </div>
+        <hr class="dropdown-divider">
+        <a href="/logout" class="dropdown-item logout-red">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Logout
+        </a>
       </div>
+    </div>
+  </div>
+</header>
+
+  <div class="body-area">
+
+    <!-- ══════════════ SIDEBAR ══════════════ -->
+    <aside class="sidebar">
+
       <nav class="sidebar-nav">
-        <p class="sidebar-section-label">Mentees</p>
-        <a href="#mentees" class="sidebar-link active"><span class="icon">◈</span> View Mentees</a>
-        <a href="#add" class="sidebar-link"><span class="icon">+</span> Add Mentee</a>
-        <p class="sidebar-section-label">Schedule</p>
-        <a href="#meetings" class="sidebar-link"><span class="icon">○</span> Meetings</a>
-        <a href="#notes" class="sidebar-link"><span class="icon">◻</span> Notes</a>
+        <p class="nav-group-label">Main</p>
+
+        <!-- Manage Mentees – active by default -->
+        <a href="#" class="nav-item active" id="nav-mentees" onclick="showSection('mentees'); return false;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Manage Mentees
+        </a>
+
+        <a href="#" class="nav-item" id="nav-schedule" onclick="showSection('schedule'); return false;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8"  y1="2" x2="8"  y2="6"/>
+            <line x1="3"  y1="10" x2="21" y2="10"/>
+          </svg>
+          Schedule Meeting
+        </a>
+
+        <a href="#" class="nav-item" id="nav-meetings" onclick="showSection('meetings'); return false;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          View Meetings
+        </a>
+
+        <a href="#" class="nav-item" id="nav-notes" onclick="showSection('notes'); return false;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          Notes
+        </a>
       </nav>
+
+      <!-- Logout at bottom -->
       <div class="sidebar-footer">
-        <a href="/logout">↩ Logout</a>
+        <a href="/logout" class="logout-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Log Out
+        </a>
       </div>
     </aside>
 
-    <div class="main-content">
+    <!-- ══════════════ MAIN CONTENT ══════════════ -->
+    <main class="main">
 
-      <div class="topbar">
-        <span class="topbar-title">Dashboard</span>
-        <span class="topbar-meta">{{ current_user.name }} &nbsp;·&nbsp; Dept. of IT</span>
-      </div>
+      <!-- Flash messages -->
+      {% if message %}
+      <div class="flash flash-success">{{ message }}</div>
+      {% endif %}
+      {% if error %}
+      <div class="flash flash-error">{{ error }}</div>
+      {% endif %}
 
-      <div class="page-body">
+      <!-- ─────────────────────────────────────────
+           SECTION 1: MANAGE MENTEES
+           ───────────────────────────────────────── -->
+      <section id="section-mentees" class="section active">
 
-        <!-- Stats -->
-        <div class="row g-3 mb-2">
-          <div class="col-md-3">
-            <div class="stat-card">
-              <p class="stat-label">Total Mentees</p>
-              <p class="stat-value">{{ stats.total_mentees }}</p>
-              <p class="stat-sub">Assigned this year</p>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="stat-card">
-              <p class="stat-label">Meetings This Month</p>
-              <p class="stat-value">{{ stats.meetings_month }}</p>
-              <p class="stat-sub">{{ stats.upcoming }} upcoming</p>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="stat-card">
-              <p class="stat-label">Pending Requests</p>
-              <p class="stat-value">{{ stats.pending }}</p>
-              <p class="stat-sub">Awaiting confirmation</p>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="stat-card">
-              <p class="stat-label">Notes Logged</p>
-              <p class="stat-value">{{ stats.notes }}</p>
-              <p class="stat-sub">Across all mentees</p>
-            </div>
+        <div class="section-topbar">
+          <h2 class="section-heading">Manage Mentees</h2>
+
+          <!-- Search bar + Add button -->
+          <div class="section-actions">
+            <form method="GET" action="/mentor/search" class="search-form">
+              <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" name="regno" class="search-input" placeholder="Search by reg. no…" value="{{ search_regno if search_regno else '' }}"/>
+            </form>
+
+            <!-- Plus button to open Add form -->
+            <button class="add-btn" onclick="toggleAddForm()" title="Add new mentee">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add Mentee
+            </button>
           </div>
         </div>
 
-        <!-- Mentee List -->
-        <div id="mentees">
-          <div class="section-header">
-            <span class="section-title">Mentee List</span>
-            <a href="/add-mentee" class="btn-sm-accent">+ Add Mentee</a>
+        <!-- ── ADD MENTEE FORM (hidden by default, toggle via JS) ── -->
+        <div class="add-form-panel" id="addForm" style="display:none;">
+          <p class="panel-title">New Mentee</p>
+          <form method="POST" action="/mentor/add">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="flabel">Register Number</label>
+                <input type="text" name="regno" class="finput" placeholder="e.g. 2341104" required/>
+              </div>
+              <div class="form-col">
+                <label class="flabel">Full Name</label>
+                <input type="text" name="name" class="finput" placeholder="e.g. Arun Kumar" required/>
+              </div>
+              <div class="form-col">
+                <label class="flabel">Department</label>
+                <input type="text" name="dept" class="finput" placeholder="e.g. IT" required/>
+              </div>
+              <div class="form-col form-col-btn">
+                <button type="submit" class="btn-primary">Save</button>
+                <button type="button" class="btn-ghost" onclick="toggleAddForm()">Cancel</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- ── SEARCH RESULT (only when a search was made) ── -->
+        {% if search_result %}
+        <div class="search-result-banner">
+          <span class="sr-label">Search result for "{{ search_regno }}"</span>
+          <a href="/mentor" class="sr-clear">✕ Clear</a>
+        </div>
+        {% endif %}
+
+        <!-- ── MENTEE LIST TABLE ── -->
+        <div class="card">
+          <table class="mentee-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Register No.</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if search_result %}
+              <!-- Single search result row -->
+              <tr class="mentee-row" onclick="openDetail('{{ search_result.regno }}','{{ search_result.name }}','{{ search_result.dept }}')" style="cursor:pointer;">
+                <td>—</td>
+                <td>{{ search_result.regno }}</td>
+                <td>{{ search_result.name }}</td>
+                <td>{{ search_result.dept }}</td>
+                <td class="row-arrow">›</td>
+              </tr>
+
+              {% elif mentees %}
+              {% for m in mentees %}
+              <tr class="mentee-row" onclick="openDetail('{{ m.regno }}','{{ m.name }}','{{ m.dept }}')" style="cursor:pointer;">
+                <td>{{ loop.index }}</td>
+                <td>{{ m.regno }}</td>
+                <td>{{ m.name }}</td>
+                <td>{{ m.dept }}</td>
+                <td class="row-arrow">›</td>
+              </tr>
+              {% endfor %}
+
+              {% else %}
+              <tr>
+                <td colspan="5" class="empty-msg">No mentees yet. Click <strong>+ Add Mentee</strong> to get started.</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ── MENTEE DETAIL PANEL (slides in on row click) ── -->
+        <div class="detail-panel" id="detailPanel" style="display:none;">
+          <div class="detail-header">
+            <p class="detail-title">Mentee Details</p>
+            <button class="close-btn" onclick="closeDetail()">✕</button>
           </div>
-          <div class="data-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Name</th>
-                  <th>Roll No.</th>
-                  <th>Year</th>
-                  <th>CGPA</th>
-                  <th>Status</th>
-                  <th>Last Meeting</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for mentee in mentees %}
-                <tr>
-                  <td>{{ loop.index }}</td>
-                  <td>{{ mentee.name }}</td>
-                  <td>{{ mentee.roll_no }}</td>
-                  <td>{{ mentee.year }}</td>
-                  <td>{{ mentee.cgpa }}</td>
-                  <td><span class="badge-status badge-{{ mentee.status_class }}">{{ mentee.status }}</span></td>
-                  <td>{{ mentee.last_meeting }}</td>
-                  <td>
-                    <a href="/mentee/{{ mentee.id }}" class="action-link">View</a>
-                    <a href="/mentee/{{ mentee.id }}/note" class="action-link">Note</a>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+
+          <!-- View mode -->
+          <div id="viewMode">
+            <div class="detail-grid">
+              <div>
+                <p class="dlabel">Register No.</p>
+                <p class="dvalue" id="d-regno"></p>
+              </div>
+              <div>
+                <p class="dlabel">Name</p>
+                <p class="dvalue" id="d-name"></p>
+              </div>
+              <div>
+                <p class="dlabel">Department</p>
+                <p class="dvalue" id="d-dept"></p>
+              </div>
+            </div>
+            <div class="detail-actions">
+              <button class="btn-primary" onclick="enableEdit()">Edit</button>
+              <form method="POST" action="/mentor/delete" style="display:inline;" onsubmit="return confirm('Delete this mentee?');">
+                <input type="hidden" name="regno" id="del-regno"/>
+                <button type="submit" class="btn-danger">Delete</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Edit mode (hidden until Edit clicked) -->
+          <div id="editMode" style="display:none;">
+            <form method="POST" action="/mentor/update">
+              <input type="hidden" name="regno" id="edit-regno"/>
+              <div class="edit-grid">
+                <div>
+                  <label class="flabel">Name</label>
+                  <input type="text" name="name" id="edit-name" class="finput" required/>
+                </div>
+                <div>
+                  <label class="flabel">Department</label>
+                  <input type="text" name="dept" id="edit-dept" class="finput" required/>
+                </div>
+              </div>
+              <div class="detail-actions">
+                <button type="submit" class="btn-primary">Save Changes</button>
+                <button type="button" class="btn-ghost" onclick="disableEdit()">Cancel</button>
+              </div>
+            </form>
           </div>
         </div>
 
-        <!-- Upcoming Meetings -->
-        <div id="meetings">
-          <div class="section-header">
-            <span class="section-title">Upcoming Meetings</span>
-            <a href="/schedule-meeting" class="btn-sm-outline">Schedule New</a>
-          </div>
-          <div class="data-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Mentee</th>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Mode</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for meeting in meetings %}
-                <tr>
-                  <td>{{ meeting.mentee_name }}</td>
-                  <td>{{ meeting.date }}</td>
-                  <td>{{ meeting.time }}</td>
-                  <td>{{ meeting.mode }}</td>
-                  <td><span class="badge-status badge-{{ meeting.status_class }}">{{ meeting.status }}</span></td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+      </section>
+
+      <!-- ─────────────────────────────────────────
+           SECTION 2: SCHEDULE MEETING
+           ───────────────────────────────────────── -->
+      <section id="section-schedule" class="section" style="display:none;">
+        <h2 class="section-heading">Schedule a Meeting</h2>
+        <div class="card form-card-body">
+          <form method="POST" action="/mentor">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="flabel">Mentee Register No.</label>
+                <input type="text" name="regno" class="finput" placeholder="e.g. 2341104" required/>
+              </div>
+              <div class="form-col">
+                <label class="flabel">Date</label>
+                <input type="date" name="date" class="finput" required/>
+              </div>
+              <div class="form-col">
+                <label class="flabel">Time</label>
+                <input type="time" name="time" class="finput" required/>
+              </div>
+              <div class="form-col">
+                <label class="flabel">Mode</label>
+                <select name="mode" class="finput">
+                  <option value="in-person">In-Person</option>
+                  <option value="online">Online</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top: 1rem;">
+              <label class="flabel">Agenda</label>
+              <textarea name="agenda" class="finput" rows="2" placeholder="Brief purpose of the meeting…"></textarea>
+            </div>
+            <div style="margin-top: 1rem;">
+              <button type="submit" class="btn-primary">Schedule →</button>
+            </div>
+          </form>
         </div>
+      </section>
 
-      </div>
-    </div>
+      <!-- ─────────────────────────────────────────
+           SECTION 3: VIEW MEETINGS
+           ───────────────────────────────────────── -->
+      <section id="section-meetings" class="section" style="display:none;">
+        <h2 class="section-heading">Meetings</h2>
+        <div class="card">
+          <table class="mentee-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Mentee</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Mode</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if meetings %}
+              {% for mt in meetings %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ mt.mentee_name }}</td>
+                <td>{{ mt.date }}</td>
+                <td>{{ mt.time }}</td>
+                <td>{{ mt.mode }}</td>
+                <td><span class="badge badge-{{ mt.status_class }}">{{ mt.status }}</span></td>
+              </tr>
+              {% endfor %}
+              {% else %}
+              <tr>
+                <td colspan="6" class="empty-msg">No meetings scheduled yet.</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
+      <!-- ─────────────────────────────────────────
+           SECTION 4: NOTES
+           ───────────────────────────────────────── -->
+      <section id="section-notes" class="section" style="display:none;">
+        <h2 class="section-heading">Notes</h2>
+        <div class="card form-card-body">
+          <form method="POST" action="/mentor/add-note">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="flabel">Mentee Register No.</label>
+                <input type="text" name="regno" class="finput" placeholder="e.g. 2341104" required/>
+              </div>
+            </div>
+            <div style="margin-top: 1rem;">
+              <label class="flabel">Note</label>
+              <textarea name="note" class="finput" rows="3" placeholder="Enter your note here…" required></textarea>
+            </div>
+            <div style="margin-top: 1rem;">
+              <button type="submit" class="btn-primary">Save Note →</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </main>
   </div>
+</div>
+
+<!-- ══════════════ JAVASCRIPT ══════════════ -->
+<script>
+  /* Switch sidebar sections */
+  function showSection(name) {
+    /* Hide all sections */
+    document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+    /* Remove active from all nav items */
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    /* Show target section */
+    document.getElementById('section-' + name).style.display = 'block';
+    /* Mark nav item active */
+    document.getElementById('nav-' + name).classList.add('active');
+    /* Close detail panel when switching */
+    closeDetail();
+  }
+
+  /* Toggle add mentee form */
+  function toggleAddForm() {
+    var form = document.getElementById('addForm');
+    form.style.display = (form.style.display === 'none') ? 'block' : 'none';
+  }
+
+  /* Open mentee detail panel */
+  function openDetail(regno, name, dept) {
+    document.getElementById('d-regno').textContent = regno;
+    document.getElementById('d-name').textContent  = name;
+    document.getElementById('d-dept').textContent  = dept;
+    document.getElementById('del-regno').value     = regno;
+    /* Pre-fill edit form */
+    document.getElementById('edit-regno').value = regno;
+    document.getElementById('edit-name').value  = name;
+    document.getElementById('edit-dept').value  = dept;
+    /* Show view mode */
+    disableEdit();
+    document.getElementById('detailPanel').style.display = 'block';
+  }
+
+  /* Close detail panel */
+  function closeDetail() {
+    document.getElementById('detailPanel').style.display = 'none';
+    disableEdit();
+  }
+
+  /* Switch to edit mode inside detail panel */
+  function enableEdit() {
+    document.getElementById('viewMode').style.display = 'none';
+    document.getElementById('editMode').style.display = 'block';
+  }
+
+  /* Switch back to view mode */
+  function disableEdit() {
+    document.getElementById('viewMode').style.display = 'block';
+    document.getElementById('editMode').style.display = 'none';
+  }
+  /* Toggle Profile Dropdown */
+function toggleDropdown() {
+  document.getElementById("profileMenu").classList.toggle("show");
+}
+
+/* Close dropdown if clicked outside */
+window.onclick = function(event) {
+  if (!event.target.matches('.nav-avatar')) {
+    var dropdowns = document.getElementsByClassName("dropdown-content");
+    for (var i = 0; i < dropdowns.length; i++) {
+      var openDropdown = dropdowns[i];
+      if (openDropdown.classList.contains('show')) {
+        openDropdown.classList.remove('show');
+      }
+    }
+  }
+}
+
+</script>
 
 </body>
 </html>

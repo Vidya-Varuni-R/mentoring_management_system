@@ -17,6 +17,11 @@
     <p class="login-subtitle">Sign in to access your dashboard</p>
 
     <div class="login-card">
+
+      {% if error %}
+      <div class="login-error">{{ error }}</div>
+      {% endif %}
+
       <form method="POST" action="/login">
 
         <div class="form-group">
