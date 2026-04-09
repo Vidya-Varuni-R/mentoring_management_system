@@ -28,7 +28,6 @@
         <a href="#records" class="sidebar-link">
           <span class="icon">○</span> View Records
         </a>
-
         <p class="sidebar-section-label">Reports</p>
         <a href="#reports" class="sidebar-link">
           <span class="icon">◻</span> Generate Reports
@@ -56,28 +55,28 @@
             <div class="col-md-3">
               <div class="stat-card">
                 <p class="stat-label">Total Mentors</p>
-                <p class="stat-value">8</p>
+                <p class="stat-value">{{ stats.total_mentors }}</p>
                 <p class="stat-sub">All active</p>
               </div>
             </div>
             <div class="col-md-3">
               <div class="stat-card">
                 <p class="stat-label">Total Mentees</p>
-                <p class="stat-value">96</p>
-                <p class="stat-sub">Across III &amp; IV year</p>
+                <p class="stat-value">{{ stats.total_mentees }}</p>
+                <p class="stat-sub">Across all years</p>
               </div>
             </div>
             <div class="col-md-3">
               <div class="stat-card">
                 <p class="stat-label">Meetings This Month</p>
-                <p class="stat-value">42</p>
-                <p class="stat-sub">↑ 12% from last month</p>
+                <p class="stat-value">{{ stats.meetings_month }}</p>
+                <p class="stat-sub">&nbsp;</p>
               </div>
             </div>
             <div class="col-md-3">
               <div class="stat-card">
                 <p class="stat-label">Flagged Students</p>
-                <p class="stat-value">7</p>
+                <p class="stat-value">{{ stats.flagged }}</p>
                 <p class="stat-sub">Attendance / CGPA alerts</p>
               </div>
             </div>
@@ -88,7 +87,7 @@
         <div id="records">
           <div class="section-header">
             <span class="section-title">Mentor Summary</span>
-            <a href="#reports" class="btn-sm-outline">Export →</a>
+            <a href="/export" class="btn-sm-outline">Export →</a>
           </div>
 
           <div class="data-table">
@@ -98,73 +97,35 @@
                   <th>Mentor</th>
                   <th>Designation</th>
                   <th>Mentees</th>
-                  <th>Meetings (Apr)</th>
+                  <th>Meetings (This Month)</th>
                   <th>Pending</th>
                   <th>Coverage</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Dr. S. Ramesh</td>
-                  <td>Professor</td>
-                  <td>12</td>
-                  <td>7</td>
-                  <td>2</td>
-                  <td>
-                    <div class="mini-bar"><div class="mini-bar-fill" style="width:85%"></div></div>
-                    <span class="mini-bar-label">85%</span>
-                  </td>
-                  <td><span class="badge-status badge-good">Active</span></td>
-                </tr>
-                <tr>
-                  <td>Dr. P. Kavitha</td>
-                  <td>Assoc. Professor</td>
-                  <td>12</td>
-                  <td>5</td>
-                  <td>4</td>
-                  <td>
-                    <div class="mini-bar"><div class="mini-bar-fill" style="width:62%"></div></div>
-                    <span class="mini-bar-label">62%</span>
-                  </td>
-                  <td><span class="badge-status badge-warn">Review</span></td>
-                </tr>
-                <tr>
-                  <td>Mr. R. Arun</td>
-                  <td>Asst. Professor</td>
-                  <td>12</td>
-                  <td>9</td>
-                  <td>0</td>
-                  <td>
-                    <div class="mini-bar"><div class="mini-bar-fill" style="width:100%"></div></div>
-                    <span class="mini-bar-label">100%</span>
-                  </td>
-                  <td><span class="badge-status badge-good">Active</span></td>
-                </tr>
-                <tr>
-                  <td>Dr. S. Nithya</td>
-                  <td>Professor</td>
-                  <td>12</td>
-                  <td>2</td>
-                  <td>6</td>
-                  <td>
-                    <div class="mini-bar"><div class="mini-bar-fill" style="width:30%"></div></div>
-                    <span class="mini-bar-label">30%</span>
-                  </td>
-                  <td><span class="badge-status badge-alert">Lagging</span></td>
-                </tr>
-                <tr>
-                  <td>Mr. V. Kumar</td>
-                  <td>Asst. Professor</td>
-                  <td>12</td>
-                  <td>6</td>
-                  <td>1</td>
-                  <td>
-                    <div class="mini-bar"><div class="mini-bar-fill" style="width:78%"></div></div>
-                    <span class="mini-bar-label">78%</span>
-                  </td>
-                  <td><span class="badge-status badge-good">Active</span></td>
-                </tr>
+                {% if mentors %}
+                  {% for mentor in mentors %}
+                  <tr>
+                    <td>{{ mentor.name }}</td>
+                    <td>{{ mentor.designation }}</td>
+                    <td>{{ mentor.mentee_count }}</td>
+                    <td>{{ mentor.meetings_month }}</td>
+                    <td>{{ mentor.pending }}</td>
+                    <td>
+                      <div class="mini-bar">
+                        <div class="mini-bar-fill" style="width:{{mentor.coverage }}%"></div>
+                      </div>
+                      <span class="mini-bar-label">{{ mentor.coverage }}%</span>
+                    </td>
+                    <td><span class="badge-status badge-{{ mentor.status_class }}">{{ mentor.status }}</span></td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="7" class="empty-state">No mentor records found.</td>
+                  </tr>
+                {% endif %}
               </tbody>
             </table>
           </div>
@@ -189,30 +150,22 @@
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Naveen Kumar T.</td>
-                  <td>311521104028</td>
-                  <td>Dr. S. Ramesh</td>
-                  <td>7.4</td>
-                  <td>68%</td>
-                  <td><span class="badge-status badge-warn">Low Attendance</span></td>
-                </tr>
-                <tr>
-                  <td>Sanjay M.</td>
-                  <td>311521104039</td>
-                  <td>Dr. P. Kavitha</td>
-                  <td>5.9</td>
-                  <td>72%</td>
-                  <td><span class="badge-status badge-alert">Low CGPA</span></td>
-                </tr>
-                <tr>
-                  <td>Ritu A.</td>
-                  <td>311521104041</td>
-                  <td>Mr. R. Arun</td>
-                  <td>6.2</td>
-                  <td>65%</td>
-                  <td><span class="badge-status badge-alert">Both</span></td>
-                </tr>
+                {% if flagged %}
+                  {% for student in flagged %}
+                  <tr>
+                    <td>{{ student.name }}</td>
+                    <td>{{ student.roll_no }}</td>
+                    <td>{{ student.mentor_name }}</td>
+                    <td>{{ student.cgpa }}</td>
+                    <td>{{ student.attendance }}</td>
+                    <td><span class="badge-status badge-{{ student.flag_class }}">{{ student.flag_reason }}</span></td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="6" class="empty-state">No flagged students.</td>
+                  </tr>
+                {% endif %}
               </tbody>
             </table>
           </div>
@@ -256,10 +209,10 @@
           </div>
         </div>
 
-      </div><!-- /page-body -->
-    </div><!-- /main-content -->
+      </div>
+    </div>
 
-  </div><!-- /app-wrapper -->
+  </div>
 
 </body>
 </html>
