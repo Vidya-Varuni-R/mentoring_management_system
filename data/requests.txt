@@ -1,0 +1,15 @@
+3122255002135,request for extra class
+3122255002134,need project guidance
+3122255002133,request for leave approval
+3122255002132,request attendance consideration
+3122255002131,need exam tips
+3122255002130,internship recommendation request
+3122255002129,lab re-evaluation request
+3122255002128,project extension request
+3122255002127,request for notes
+3122255002126,extra coaching request
+3122255002125,attendance condonation request
+3122255002124,placement training request
+3122255002123,help with mini project
+3122255002122,time management guidance
+3122255002121,overall mentoring support

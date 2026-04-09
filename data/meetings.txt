@@ -1,1 +1,4 @@
-3122255002135,2026-04-17,11:52,in-person,discuss about marks
+3122255002135,2026-04-17,11:52,in-person,discuss about marks,completed
+3122255002134,2026-04-16,10:30,online,career guidance,completed
+3122255002133,2026-04-15,09:45,in-person,project discussion,pending
+3122255002132,2026-04-14,12:00,online,attendance issue,completed

@@ -136,6 +136,21 @@ def schedule_meeting():
     if out == "SUCCESS:meeting_scheduled":
         return redirect(url_for('mentor_dashboard', message="Meeting scheduled successfully."))
     return redirect(url_for('mentor_dashboard', error=f"Could not schedule meeting. C said: {out}"))
+# ── Add Note ────────────────────────────────────────────────
+@app.route('/mentor/add-note', methods=['POST'])
+def add_note():
+    regno = request.form.get('regno', '').strip()
+    note  = request.form.get('note',  '').strip()
+
+    if not all([regno, note]):
+        return redirect(url_for('mentor_dashboard', error="Both fields are required."))
+
+    note_args = note.split()   # split so spaces survive argv
+    out = run_mentor(["addnote", regno] + note_args)
+
+    if out == "SUCCESS:note_added":
+        return redirect(url_for('mentor_dashboard', message="Note saved successfully."))
+    return redirect(url_for('mentor_dashboard', error="Could not save note."))
 
 
 # ── Add Mentee ────────────────────────────────────────────────

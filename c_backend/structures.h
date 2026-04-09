@@ -28,5 +28,9 @@ struct Request {
     char message[100];
     struct Request *next;
 };
-
+struct Note {
+    char regno[50];
+    char note[200];
+    struct Note *next;
+};
 #endif

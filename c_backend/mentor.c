@@ -23,6 +23,8 @@
 #define MENTEES_FILE  "../data/mentees.txt"
 #define MEETINGS_FILE "../data/meetings.txt"
 #define REQUESTS_FILE "../data/requests.txt"
+#define NOTES_FILE "../data/notes.txt"
+
 
 
 /* ── safe token helper: returns "" instead of crashing on NULL ── */
@@ -205,14 +207,6 @@ void freeMeetings(struct Meeting *head) {
 
 /* ── MEETING: operations ──────────────────────────────────────── */
 
-/*
-    scheduleMeeting
-    ---------------
-    argc and argv are passed in so we can join argv[6], argv[7], ...
-    into one agenda string. This handles agendas with spaces like
-    "Discuss CGPA improvement" which would otherwise split into
-    multiple separate arguments.
-*/
 void scheduleMeeting(int argc, char *argv[]) {
     char *regno = argv[2];
     char *date  = argv[3];
@@ -296,7 +290,60 @@ void viewRequests() {
         printf("REQUEST:%s,%s\n", c->regno, c->message);
     freeRequests(head);
 }
+/* ── NOTES: load / free / view ──────────────────────────────── */
 
+struct Note* loadNotes() {
+    struct Note *head = NULL, *tail = NULL;
+    FILE *fp = fopen(NOTES_FILE, "r");
+    if (!fp) return NULL;
+    char line[300];
+    while (fgets(line, sizeof(line), fp)) {
+        line[strcspn(line, "\n")] = '\0';
+        if (!strlen(line)) continue;
+        struct Note *n = malloc(sizeof(struct Note));
+        n->next = NULL;
+        char tmp[300]; strcpy(tmp, line);
+        strcpy(n->regno, safe_tok(tmp, ","));
+        char *t = strtok(NULL, "");
+        strcpy(n->note, t ? t : "");
+        if (!head) { head = n; tail = n; }
+        else       { tail->next = n; tail = n; }
+    }
+    fclose(fp);
+    return head;
+}
+
+void saveNotes(struct Note *head) {
+    FILE *fp = fopen(NOTES_FILE, "w");
+    if (!fp) { printf("ERROR:cannot_open_file\n"); return; }
+    for (struct Note *c = head; c; c = c->next)
+        fprintf(fp, "%s,%s\n", c->regno, c->note);
+    fclose(fp);
+}
+
+void freeNotes(struct Note *head) {
+    while (head) { struct Note *t = head; head = head->next; free(t); }
+}
+
+void addNote(int argc, char *argv[]) {
+    char *regno = argv[2];
+    /* join argv[3]+ into one note string (handles spaces) */
+    char note[200] = "";
+    for (int i = 3; i < argc; i++) {
+        if (i > 3) strcat(note, " ");
+        strcat(note, argv[i]);
+    }
+    struct Note *head = loadNotes();
+    struct Note *n = malloc(sizeof(struct Note));
+    strcpy(n->regno, regno);
+    strcpy(n->note,  note);
+    n->next = NULL;
+    if (!head) { head = n; }
+    else { struct Note *c = head; while (c->next) c = c->next; c->next = n; }
+    saveNotes(head);
+    freeNotes(head);
+    printf("SUCCESS:note_added\n");
+}
 
 /* ── MAIN ─────────────────────────────────────────────────────── */
 
@@ -311,6 +358,7 @@ int main(int argc, char *argv[]) {
     else if (strcmp(argv[1], "schedule") == 0 && argc >= 6) scheduleMeeting(argc, argv);
     else if (strcmp(argv[1], "meetings") == 0)               viewMeetings();
     else if (strcmp(argv[1], "requests") == 0)               viewRequests();
+    else if (strcmp(argv[1], "addnote") == 0 && argc >= 4) addNote(argc, argv);
     else printf("ERROR:unknown_command\n");
 
     return 0;
