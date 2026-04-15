@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "structures.h"
-#include "structures.h"
+
 
 struct QueueNode {
     char regno[50];
