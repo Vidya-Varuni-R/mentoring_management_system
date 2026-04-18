@@ -1,365 +1,294 @@
 /*
-    mentor.c - Mentor Module
-    SSN College of Engineering, Dept. of IT
+ * mentor.c  —  Mentor Module  (REFACTORED)
+ *
+ * All feature functions operate on data structures (linked lists, queue,
+ * hash tables) passed as arguments. Files are touched only inside main().
+ *
+ * Usage (run from c_backend/):
+ *   ./mentor view_mentees     <mentor_id>
+ *   ./mentor add_mentee       <mentor_id> <name> <dept> <roll> <cgpa> <attendance>
+ *   ./mentor search_mentee    <roll>
+ *   ./mentor update_mentee    <roll> <name> <dept> <cgpa> <attendance>
+ *   ./mentor delete_mentee    <roll>
+ *   ./mentor add_note         <mentor_id> <roll> <note>
+ *   ./mentor view_notes       <mentor_id>
+ *   ./mentor view_requests    <mentor_id>
+ *   ./mentor respond_request  <request_id> <accepted|rejected>
+ *   ./mentor view_meetings    <mentor_id>
+ *   ./mentor schedule_meeting <mentor_id> <roll> <date> <time> <mode> <agenda>
+ */
 
-    Compile : gcc mentor.c -o mentor.exe
-
-    Commands:
-        mentor.exe add      <regno> <n> <dept>
-        mentor.exe view
-        mentor.exe search   <regno>
-        mentor.exe update   <regno> <n> <dept>
-        mentor.exe delete   <regno>
-        mentor.exe schedule <regno> <date> <time> <mode> <agenda words...>
-        mentor.exe meetings
-        mentor.exe requests
-*/
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "structures.h"
+#include <time.h>
 
-#define MENTEES_FILE  "../data/mentees.txt"
-#define MEETINGS_FILE "../data/meetings.txt"
-#define REQUESTS_FILE "../data/requests.txt"
-#define NOTES_FILE "../data/notes.txt"
-
-
-
-/* ── safe token helper: returns "" instead of crashing on NULL ── */
-char* safe_tok(char *src, const char *delim) {
-    char *t = strtok(src, delim);
-    return t ? t : "";
+static void today(char out[MAX_LEN]) {
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+    strftime(out, MAX_LEN, "%Y-%m-%d", tm);
 }
 
+/* ════════════════════════════════════════════════════════════════
+   MENTEES
+   ════════════════════════════════════════════════════════════════ */
 
-/* ── MENTEE: load / save / free ───────────────────────────────── */
-
-struct Mentee* loadMentees() {
-    struct Mentee *head = NULL, *tail = NULL;
-    FILE *fp = fopen(MENTEES_FILE, "r");
-    if (!fp) return NULL;
-
-    char line[200];
-    while (fgets(line, sizeof(line), fp)) {
-        line[strcspn(line, "\n")] = '\0';
-        if (!strlen(line)) continue;
-
-        struct Mentee *n = malloc(sizeof(struct Mentee));
-        n->next = NULL;
-        char tmp[200]; strcpy(tmp, line);
-        strcpy(n->regno, safe_tok(tmp,  ","));
-        strcpy(n->name,  safe_tok(NULL, ","));
-        strcpy(n->dept,  safe_tok(NULL, ","));
-
-        if (!head) { head = n; tail = n; }
-        else       { tail->next = n; tail = n; }
-    }
-    fclose(fp);
-    return head;
-}
-
-void saveMentees(struct Mentee *head) {
-    FILE *fp = fopen(MENTEES_FILE, "w");
-    if (!fp) { printf("ERROR:cannot_open_file\n"); return; }
-    for (struct Mentee *c = head; c; c = c->next)
-        fprintf(fp, "%s,%s,%s\n", c->regno, c->name, c->dept);
-    fclose(fp);
-}
-
-void freeMentees(struct Mentee *head) {
-    while (head) { struct Mentee *t = head; head = head->next; free(t); }
-}
-
-
-/* ── MENTEE: operations ───────────────────────────────────────── */
-
-void addMentee(char *regno, char *name, char *dept) {
-    struct Mentee *head = loadMentees();
-
-    for (struct Mentee *c = head; c; c = c->next) {
-        if (strcmp(c->regno, regno) == 0) {
-            printf("ERROR:duplicate_regno\n");
-            freeMentees(head); return;
+static void viewMentees(struct Mentee *list, const char *mentor_id) {
+    int found = 0;
+    for (struct Mentee *m = list; m; m = m->next) {
+        if (strcmp(m->mentor_id, mentor_id) == 0) {
+            printf("DATA:%s,%s,%s,%s,%s\n",
+                m->roll, m->name, m->dept, m->cgpa, m->attendance);
+            found = 1;
         }
     }
+    if (!found) printf("EMPTY:no_mentees\n");
+}
 
-    struct Mentee *n = malloc(sizeof(struct Mentee));
-    strcpy(n->regno, regno);
-    strcpy(n->name,  name);
-    strcpy(n->dept,  dept);
-    n->next = NULL;
-
-    if (!head) {
-        head = n;
-    } else {
-        struct Mentee *c = head;
-        while (c->next) c = c->next;
-        c->next = n;
+/* Returns 1 if list was changed (so main knows to save). */
+static int addMentee(struct Mentee **head, struct Mentee **tail,
+                     struct MenteeHash *mh,
+                     const char *mentor_id, const char *name,
+                     const char *dept, const char *roll,
+                     const char *cgpa, const char *attendance) {
+    if (menteeHashFind(mh, roll)) {
+        printf("ERROR:duplicate_roll\n");
+        return 0;
     }
-
-    saveMentees(head);
-    freeMentees(head);
+    struct Mentee *m = (struct Mentee *)calloc(1, sizeof(struct Mentee));
+    copyField(m->roll,       roll,       MAX_LEN);
+    copyField(m->name,       name,       MAX_LEN);
+    copyField(m->dept,       dept,       MAX_LEN);
+    copyField(m->cgpa,       cgpa,       MAX_LEN);
+    copyField(m->attendance, attendance, MAX_LEN);
+    copyField(m->mentor_id,  mentor_id,  MAX_LEN);
+    appendMentee(head, tail, m);
+    menteeHashInsert(mh, m);
     printf("SUCCESS:mentee_added\n");
+    return 1;
 }
 
-void viewMentees() {
-    struct Mentee *head = loadMentees();
-    if (!head) { printf("EMPTY:no_mentees\n"); return; }
-    for (struct Mentee *c = head; c; c = c->next)
-        printf("DATA:%s,%s,%s\n", c->regno, c->name, c->dept);
-    freeMentees(head);
+static void searchMentee(struct MenteeHash *mh, const char *roll) {
+    struct Mentee *m = menteeHashFind(mh, roll);     /* O(1) hash lookup */
+    if (!m) { printf("NOT_FOUND:%s\n", roll); return; }
+    printf("FOUND:%s,%s,%s,%s,%s,%s\n",
+        m->roll, m->name, m->dept, m->cgpa, m->attendance, m->mentor_id);
 }
 
-void searchMentee(char *regno) {
-    struct Mentee *head = loadMentees();
-    for (struct Mentee *c = head; c; c = c->next) {
-        if (strcmp(c->regno, regno) == 0) {
-            printf("FOUND:%s,%s,%s\n", c->regno, c->name, c->dept);
-            freeMentees(head); return;
-        }
-    }
-    printf("NOT_FOUND:%s\n", regno);
-    freeMentees(head);
-}
-
-void updateMentee(char *regno, char *name, char *dept) {
-    struct Mentee *head = loadMentees();
-    int found = 0;
-    for (struct Mentee *c = head; c; c = c->next) {
-        if (strcmp(c->regno, regno) == 0) {
-            strcpy(c->name, name);
-            strcpy(c->dept, dept);
-            found = 1; break;
-        }
-    }
-    if (!found) { printf("NOT_FOUND:%s\n", regno); freeMentees(head); return; }
-    saveMentees(head);
-    freeMentees(head);
+static int updateMentee(struct MenteeHash *mh, const char *roll,
+                        const char *name, const char *dept,
+                        const char *cgpa, const char *attendance) {
+    struct Mentee *m = menteeHashFind(mh, roll);
+    if (!m) { printf("NOT_FOUND:%s\n", roll); return 0; }
+    copyField(m->name,       name,       MAX_LEN);
+    copyField(m->dept,       dept,       MAX_LEN);
+    copyField(m->cgpa,       cgpa,       MAX_LEN);
+    copyField(m->attendance, attendance, MAX_LEN);
     printf("SUCCESS:mentee_updated\n");
+    return 1;
 }
 
-void deleteMentee(char *regno) {
-    struct Mentee *head = loadMentees();
-    struct Mentee *prev = NULL, *cur = head;
-    int found = 0;
-
-    while (cur) {
-        if (strcmp(cur->regno, regno) == 0) {
-            if (!prev) head = cur->next;
-            else       prev->next = cur->next;
-            free(cur);
-            found = 1; break;
+static int deleteMentee(struct Mentee **head, struct Mentee **tail,
+                        struct MenteeHash *mh, const char *roll) {
+    struct Mentee *prev = NULL, *p = *head;
+    while (p) {
+        if (strcmp(p->roll, roll) == 0) {
+            if (prev) prev->next = p->next; else *head = p->next;
+            if (p == *tail) *tail = prev;
+            menteeHashRemove(mh, roll);
+            free(p);
+            printf("SUCCESS:mentee_deleted\n");
+            return 1;
         }
-        prev = cur; cur = cur->next;
+        prev = p; p = p->next;
     }
-
-    if (!found) { printf("NOT_FOUND:%s\n", regno); freeMentees(head); return; }
-    saveMentees(head);
-    freeMentees(head);
-    printf("SUCCESS:mentee_deleted\n");
+    printf("NOT_FOUND:%s\n", roll);
+    return 0;
 }
 
+/* ════════════════════════════════════════════════════════════════
+   NOTES
+   ════════════════════════════════════════════════════════════════ */
 
-/* ── MEETING: load / save / free ──────────────────────────────── */
+static int addNote(struct Note **head, struct Note **tail,
+                   const char *mentor_id, const char *roll, const char *note) {
+    int maxId = 0;
+    for (struct Note *n = *head; n; n = n->next) if (n->id > maxId) maxId = n->id;
 
-struct Meeting* loadMeetings() {
-    struct Meeting *head = NULL, *tail = NULL;
-    FILE *fp = fopen(MEETINGS_FILE, "r");
-    if (!fp) return NULL;
-
-    char line[300];
-    while (fgets(line, sizeof(line), fp)) {
-        line[strcspn(line, "\n")] = '\0';
-        if (!strlen(line)) continue;
-
-        struct Meeting *n = malloc(sizeof(struct Meeting));
-        n->next = NULL;
-        char tmp[300]; strcpy(tmp, line);
-        strcpy(n->regno,  safe_tok(tmp,  ","));
-        strcpy(n->date,   safe_tok(NULL, ","));
-        strcpy(n->time,   safe_tok(NULL, ","));
-        strcpy(n->mode,   safe_tok(NULL, ","));
-        /* agenda is everything after the 4th comma */
-        char *ag = strtok(NULL, "");
-        strcpy(n->agenda, ag ? ag : "");
-
-        if (!head) { head = n; tail = n; }
-        else       { tail->next = n; tail = n; }
-    }
-    fclose(fp);
-    return head;
-}
-
-void saveMeetings(struct Meeting *head) {
-    FILE *fp = fopen(MEETINGS_FILE, "w");
-    if (!fp) { printf("ERROR:cannot_open_file\n"); return; }
-    for (struct Meeting *c = head; c; c = c->next)
-        fprintf(fp, "%s,%s,%s,%s,%s\n", c->regno, c->date, c->time, c->mode, c->agenda);
-    fclose(fp);
-}
-
-void freeMeetings(struct Meeting *head) {
-    while (head) { struct Meeting *t = head; head = head->next; free(t); }
-}
-
-
-/* ── MEETING: operations ──────────────────────────────────────── */
-
-void scheduleMeeting(int argc, char *argv[]) {
-    char *regno = argv[2];
-    char *date  = argv[3];
-    char *time  = argv[4];
-    char *mode  = argv[5];
-
-    /* join all remaining args into one agenda string */
-    char agenda[200] = "";
-    for (int i = 6; i < argc; i++) {
-        if (i > 6) strcat(agenda, " ");
-        strcat(agenda, argv[i]);
-    }
-    if (strlen(agenda) == 0) strcpy(agenda, "No agenda");
-
-    struct Meeting *head = loadMeetings();
-
-    struct Meeting *n = malloc(sizeof(struct Meeting));
-    strcpy(n->regno,  regno);
-    strcpy(n->date,   date);
-    strcpy(n->time,   time);
-    strcpy(n->mode,   mode);
-    strcpy(n->agenda, agenda);
-    n->next = NULL;
-
-    if (!head) {
-        head = n;
-    } else {
-        struct Meeting *c = head;
-        while (c->next) c = c->next;
-        c->next = n;
-    }
-
-    saveMeetings(head);
-    freeMeetings(head);
-    printf("SUCCESS:meeting_scheduled\n");
-}
-
-void viewMeetings() {
-    struct Meeting *head = loadMeetings();
-    if (!head) { printf("EMPTY:no_meetings\n"); return; }
-    for (struct Meeting *c = head; c; c = c->next)
-        printf("MEETING:%s,%s,%s,%s,%s\n", c->regno, c->date, c->time, c->mode, c->agenda);
-    freeMeetings(head);
-}
-
-
-/* ── REQUEST: load / free / view ──────────────────────────────── */
-
-struct Request* loadRequests() {
-    struct Request *head = NULL, *tail = NULL;
-    FILE *fp = fopen(REQUESTS_FILE, "r");
-    if (!fp) return NULL;
-
-    char line[300];
-    while (fgets(line, sizeof(line), fp)) {
-        line[strcspn(line, "\n")] = '\0';
-        if (!strlen(line)) continue;
-
-        struct Request *n = malloc(sizeof(struct Request));
-        n->next = NULL;
-        char tmp[300]; strcpy(tmp, line);
-        strcpy(n->regno,   safe_tok(tmp,  ","));
-        char *msg = strtok(NULL, "");
-        strcpy(n->message, msg ? msg : "");
-
-        if (!head) { head = n; tail = n; }
-        else       { tail->next = n; tail = n; }
-    }
-    fclose(fp);
-    return head;
-}
-
-void freeRequests(struct Request *head) {
-    while (head) { struct Request *t = head; head = head->next; free(t); }
-}
-
-void viewRequests() {
-    struct Request *head = loadRequests();
-    if (!head) { printf("EMPTY:no_requests\n"); return; }
-    for (struct Request *c = head; c; c = c->next)
-        printf("REQUEST:%s,%s\n", c->regno, c->message);
-    freeRequests(head);
-}
-/* ── NOTES: load / free / view ──────────────────────────────── */
-
-struct Note* loadNotes() {
-    struct Note *head = NULL, *tail = NULL;
-    FILE *fp = fopen(NOTES_FILE, "r");
-    if (!fp) return NULL;
-    char line[300];
-    while (fgets(line, sizeof(line), fp)) {
-        line[strcspn(line, "\n")] = '\0';
-        if (!strlen(line)) continue;
-        struct Note *n = malloc(sizeof(struct Note));
-        n->next = NULL;
-        char tmp[300]; strcpy(tmp, line);
-        strcpy(n->regno, safe_tok(tmp, ","));
-        char *t = strtok(NULL, "");
-        strcpy(n->note, t ? t : "");
-        if (!head) { head = n; tail = n; }
-        else       { tail->next = n; tail = n; }
-    }
-    fclose(fp);
-    return head;
-}
-
-void saveNotes(struct Note *head) {
-    FILE *fp = fopen(NOTES_FILE, "w");
-    if (!fp) { printf("ERROR:cannot_open_file\n"); return; }
-    for (struct Note *c = head; c; c = c->next)
-        fprintf(fp, "%s,%s\n", c->regno, c->note);
-    fclose(fp);
-}
-
-void freeNotes(struct Note *head) {
-    while (head) { struct Note *t = head; head = head->next; free(t); }
-}
-
-void addNote(int argc, char *argv[]) {
-    char *regno = argv[2];
-    /* join argv[3]+ into one note string (handles spaces) */
-    char note[200] = "";
-    for (int i = 3; i < argc; i++) {
-        if (i > 3) strcat(note, " ");
-        strcat(note, argv[i]);
-    }
-    struct Note *head = loadNotes();
-    struct Note *n = malloc(sizeof(struct Note));
-    strcpy(n->regno, regno);
-    strcpy(n->note,  note);
-    n->next = NULL;
-    if (!head) { head = n; }
-    else { struct Note *c = head; while (c->next) c = c->next; c->next = n; }
-    saveNotes(head);
-    freeNotes(head);
+    struct Note *n = (struct Note *)calloc(1, sizeof(struct Note));
+    n->id = maxId + 1;
+    copyField(n->roll,      roll,      MAX_LEN);
+    copyField(n->mentor_id, mentor_id, MAX_LEN);
+    copyField(n->note,      note,      MAX_NOTE_LEN);
+    today(n->date);
+    appendNote(head, tail, n);
     printf("SUCCESS:note_added\n");
+    return 1;
 }
 
-/* ── MAIN ─────────────────────────────────────────────────────── */
+static void viewNotes(struct Note *notes, struct MenteeHash *mh, const char *mentor_id) {
+    int found = 0;
+    for (struct Note *n = notes; n; n = n->next) {
+        if (strcmp(n->mentor_id, mentor_id) == 0) {
+            struct Mentee *m = menteeHashFind(mh, n->roll);
+            const char *mname = m ? m->name : "-";
+            printf("NOTE:%d,%s,%s,%s,%s\n",
+                n->id, n->roll, mname, n->note, n->date);
+            found = 1;
+        }
+    }
+    if (!found) printf("EMPTY:no_notes\n");
+}
 
+/* ════════════════════════════════════════════════════════════════
+   REQUESTS  (queue) and MEETINGS
+   ════════════════════════════════════════════════════════════════ */
+
+static void viewRequests(struct RequestQueue *q, struct MenteeHash *mh,
+                         const char *mentor_id) {
+    int found = 0;
+    for (struct Request *r = q->head; r; r = r->next) {
+        if (strcmp(r->mentor_id, mentor_id) == 0 &&
+            strcmp(r->status, "pending") == 0) {
+            struct Mentee *m = menteeHashFind(mh, r->roll);
+            const char *mname = m ? m->name : "-";
+            printf("REQUEST:%d,%s,%s,%s,%s,%s,%s,%s\n",
+                r->id, r->roll, mname, r->date, r->time, r->mode,
+                r->purpose, r->status);
+            found = 1;
+        }
+    }
+    if (!found) printf("EMPTY:no_requests\n");
+}
+
+/* writes back pointer to whether requests/meetings changed */
+static void respondRequest(struct RequestQueue *q,
+                           struct Meeting **mhead, struct Meeting **mtail,
+                           const char *req_id_str, const char *response,
+                           int *reqChanged, int *meetChanged) {
+    int req_id = atoi(req_id_str);
+    struct Request *target = NULL;
+    for (struct Request *r = q->head; r; r = r->next)
+        if (r->id == req_id) { target = r; break; }
+
+    if (!target) { printf("NOT_FOUND:%s\n", req_id_str); return; }
+    if (strcmp(response, "accepted") != 0 && strcmp(response, "rejected") != 0) {
+        printf("ERROR:invalid_response\n"); return;
+    }
+
+    copyField(target->status, response, MAX_LEN);
+    *reqChanged = 1;
+
+    if (strcmp(response, "accepted") == 0) {
+        int maxId = 0;
+        for (struct Meeting *m = *mhead; m; m = m->next)
+            if (m->id > maxId) maxId = m->id;
+        struct Meeting *nm = (struct Meeting *)calloc(1, sizeof(struct Meeting));
+        nm->id = maxId + 1;
+        copyField(nm->roll,      target->roll,      MAX_LEN);
+        copyField(nm->mentor_id, target->mentor_id, MAX_LEN);
+        copyField(nm->date,      target->date,      MAX_LEN);
+        copyField(nm->time,      target->time,      MAX_LEN);
+        copyField(nm->mode,      target->mode,      MAX_LEN);
+        copyField(nm->agenda,    target->purpose,   MAX_NOTE_LEN);
+        strcpy(nm->status, "confirmed");
+        appendMeeting(mhead, mtail, nm);
+        *meetChanged = 1;
+        printf("SUCCESS:request_accepted\n");
+    } else {
+        printf("SUCCESS:request_rejected\n");
+    }
+}
+
+static void viewMeetings(struct Meeting *meetings, struct MenteeHash *mh,
+                         const char *mentor_id) {
+    int found = 0;
+    for (struct Meeting *m = meetings; m; m = m->next) {
+        if (strcmp(m->mentor_id, mentor_id) == 0) {
+            struct Mentee *me = menteeHashFind(mh, m->roll);
+            const char *mname = me ? me->name : "-";
+            printf("MEETING:%d,%s,%s,%s,%s,%s,%s,%s\n",
+                m->id, m->roll, mname, m->date, m->time, m->mode,
+                m->agenda, m->status);
+            found = 1;
+        }
+    }
+    if (!found) printf("EMPTY:no_meetings\n");
+}
+
+static int scheduleMeeting(struct Meeting **mhead, struct Meeting **mtail,
+                           struct MenteeHash *mh,
+                           const char *mentor_id, const char *roll,
+                           const char *date, const char *time_str,
+                           const char *mode, const char *agenda) {
+    struct Mentee *me = menteeHashFind(mh, roll);
+    if (!me || strcmp(me->mentor_id, mentor_id) != 0) {
+        printf("ERROR:not_your_mentee\n");
+        return 0;
+    }
+    int maxId = 0;
+    for (struct Meeting *m = *mhead; m; m = m->next)
+        if (m->id > maxId) maxId = m->id;
+
+    struct Meeting *nm = (struct Meeting *)calloc(1, sizeof(struct Meeting));
+    nm->id = maxId + 1;
+    copyField(nm->roll,      roll,      MAX_LEN);
+    copyField(nm->mentor_id, mentor_id, MAX_LEN);
+    copyField(nm->date,      date,      MAX_LEN);
+    copyField(nm->time,      time_str,  MAX_LEN);
+    copyField(nm->mode,      mode,      MAX_LEN);
+    copyField(nm->agenda,    agenda,    MAX_NOTE_LEN);
+    strcpy(nm->status, "confirmed");
+    appendMeeting(mhead, mtail, nm);
+    printf("SUCCESS:meeting_scheduled\n");
+    return 1;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MAIN — load once, dispatch, save once
+   ════════════════════════════════════════════════════════════════ */
 int main(int argc, char *argv[]) {
     if (argc < 2) { printf("ERROR:no_command\n"); return 1; }
+    char *cmd = argv[1];
 
-    if      (strcmp(argv[1], "add")      == 0 && argc >= 5) addMentee(argv[2], argv[3], argv[4]);
-    else if (strcmp(argv[1], "view")     == 0)               viewMentees();
-    else if (strcmp(argv[1], "search")   == 0 && argc >= 3) searchMentee(argv[2]);
-    else if (strcmp(argv[1], "update")   == 0 && argc >= 5) updateMentee(argv[2], argv[3], argv[4]);
-    else if (strcmp(argv[1], "delete")   == 0 && argc >= 3) deleteMentee(argv[2]);
-    else if (strcmp(argv[1], "schedule") == 0 && argc >= 6) scheduleMeeting(argc, argv);
-    else if (strcmp(argv[1], "meetings") == 0)               viewMeetings();
-    else if (strcmp(argv[1], "requests") == 0)               viewRequests();
-    else if (strcmp(argv[1], "addnote") == 0 && argc >= 4) addNote(argc, argv);
-    else printf("ERROR:unknown_command\n");
+    /* LOAD ONCE */
+    struct Mentee  *mentees      = loadMenteesList();
+    struct Note    *notes        = loadNotesList();
+    struct Meeting *meetings     = loadMeetingsList();
+    struct RequestQueue requests; loadRequestsQueue(&requests);
 
+    /* tail pointers (so we can append in O(1) without rescanning) */
+    struct Mentee  *menteeTail  = mentees;
+    while (menteeTail && menteeTail->next) menteeTail = menteeTail->next;
+    struct Note    *noteTail    = notes;
+    while (noteTail && noteTail->next) noteTail = noteTail->next;
+    struct Meeting *meetingTail = meetings;
+    while (meetingTail && meetingTail->next) meetingTail = meetingTail->next;
+
+    /* HASH TABLE for fast mentee lookup by roll */
+    struct MenteeHash mh; buildMenteeHash(&mh, mentees);
+
+    int menteesChanged  = 0;
+    int notesChanged    = 0;
+    int requestsChanged = 0;
+    int meetingsChanged = 0;
+
+    /* DISPATCH */
+    if      (strcmp(cmd, "view_mentees")     == 0 && argc >= 3) viewMentees(mentees, argv[2]);
+    else if (strcmp(cmd, "add_mentee")       == 0 && argc >= 8) menteesChanged = addMentee(&mentees, &menteeTail, &mh, argv[2], argv[3], argv[4], argv[5], argv[6], argv[7]);
+    else if (strcmp(cmd, "search_mentee")    == 0 && argc >= 3) searchMentee(&mh, argv[2]);
+    else if (strcmp(cmd, "update_mentee")    == 0 && argc >= 7) menteesChanged = updateMentee(&mh, argv[2], argv[3], argv[4], argv[5], argv[6]);
+    else if (strcmp(cmd, "delete_mentee")    == 0 && argc >= 3) menteesChanged = deleteMentee(&mentees, &menteeTail, &mh, argv[2]);
+    else if (strcmp(cmd, "add_note")         == 0 && argc >= 5) notesChanged   = addNote(&notes, &noteTail, argv[2], argv[3], argv[4]);
+    else if (strcmp(cmd, "view_notes")       == 0 && argc >= 3) viewNotes(notes, &mh, argv[2]);
+    else if (strcmp(cmd, "view_requests")    == 0 && argc >= 3) viewRequests(&requests, &mh, argv[2]);
+    else if (strcmp(cmd, "respond_request")  == 0 && argc >= 4) respondRequest(&requests, &meetings, &meetingTail, argv[2], argv[3], &requestsChanged, &meetingsChanged);
+    else if (strcmp(cmd, "view_meetings")    == 0 && argc >= 3) viewMeetings(meetings, &mh, argv[2]);
+    else if (strcmp(cmd, "schedule_meeting") == 0 && argc >= 8) meetingsChanged = scheduleMeeting(&meetings, &meetingTail, &mh, argv[2], argv[3], argv[4], argv[5], argv[6], argv[7]);
+    else { printf("ERROR:unknown_or_bad_args:%s\n", cmd); return 2; }
+
+    /* SAVE ONCE (only files that changed) */
+    if (menteesChanged)  saveMenteesList(mentees);
+    if (notesChanged)    saveNotesList(notes);
+    if (requestsChanged) saveRequestsQueue(&requests);
+    if (meetingsChanged) saveMeetingsList(meetings);
     return 0;
 }
