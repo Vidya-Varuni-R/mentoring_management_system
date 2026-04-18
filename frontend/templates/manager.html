@@ -3,216 +3,394 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MMS – Manager Dashboard</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
-  <link rel="stylesheet" href="../static/base.css"/>
-  <link rel="stylesheet" href="../static/manager.css"/>
+  <title>MentorSpace – Manager Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
 </head>
 <body>
+<div class="shell">
 
-  <div class="app-wrapper">
-
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <p class="sidebar-brand-tag">SSN College of Engg.</p>
-        <p class="sidebar-brand-name">Mentoring<br>Management</p>
-        <span class="sidebar-role-badge">Manager</span>
+  <!-- ── Navbar ── -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-icon">M</div>
+      <div>
+        <p class="brand-name">MentorSpace</p>
+        <p class="brand-sub">SSN College of Engineering</p>
       </div>
+    </div>
+    <div class="navbar-right">
+      <span class="nav-badge">Manager</span>
+      <div class="profile-wrap">
+        <button class="profile-btn" onclick="toggleDd()">
+          <div class="avatar" style="background:var(--gold)">AD</div>
+          <span class="profile-name-text">Admin</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="dropdown" id="profileDd">
+          <div class="dd-head">
+            <p class="dd-name">Academic Manager</p>
+            <p class="dd-role">Administrator</p>
+          </div>
+          <hr class="dd-divider"/>
+          <a href="/logout" class="dd-item red">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Log Out
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
 
+  <div class="body-area">
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
       <nav class="sidebar-nav">
-        <p class="sidebar-section-label">Overview</p>
-        <a href="#overview" class="sidebar-link active">
-          <span class="icon">◈</span> Summary
-        </a>
-        <a href="#records" class="sidebar-link">
-          <span class="icon">○</span> View Records
-        </a>
-        <p class="sidebar-section-label">Reports</p>
-        <a href="#reports" class="sidebar-link">
-          <span class="icon">◻</span> Generate Reports
+        <p class="nav-group">Overview</p>
+        <button class="nav-item active" id="nav-overview" onclick="show('overview')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Overview
+        </button>
+        <button class="nav-item" id="nav-flagged" onclick="show('flagged')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Flagged Students
+          {% if flagged %}<span class="nav-count">{{ flagged|length }}</span>{% endif %}
+        </button>
+        <p class="nav-group">Records</p>
+        <button class="nav-item" id="nav-mentors" onclick="show('mentors')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          All Mentors
+        </button>
+        <button class="nav-item" id="nav-mentees" onclick="show('mentees')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          All Mentees
+        </button>
+        <button class="nav-item" id="nav-meetings" onclick="show('meetings')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          All Meetings
+        </button>
+        <p class="nav-group">Reports</p>
+        <a href="/manager/export" target="_blank" class="nav-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Report
         </a>
       </nav>
-
-      <div class="sidebar-footer">
-        <a href="/logout">↩ Logout</a>
+      <div class="sidebar-foot">
+        <a href="/logout" class="nav-item" style="color:var(--red)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Logout
+        </a>
       </div>
     </aside>
 
-    <!-- Main -->
-    <div class="main-content">
+    <!-- ── Main ── -->
+    <main class="main">
 
-      <div class="topbar">
-        <span class="topbar-title">Manager Dashboard</span>
-        <span class="topbar-meta">IT Department &nbsp;·&nbsp; AY 2025–26</span>
+      {% if message %}
+      <div class="toast toast-success">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        {{ message }}
       </div>
+      {% endif %}
+      {% if error %}
+      <div class="toast toast-error">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        {{ error }}
+      </div>
+      {% endif %}
 
-      <div class="page-body">
-
-        <!-- Summary Stats -->
-        <div id="overview">
-          <div class="row g-3 mb-2">
-            <div class="col-md-3">
-              <div class="stat-card">
-                <p class="stat-label">Total Mentors</p>
-                <p class="stat-value">{{ stats.total_mentors }}</p>
-                <p class="stat-sub">All active</p>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="stat-card">
-                <p class="stat-label">Total Mentees</p>
-                <p class="stat-value">{{ stats.total_mentees }}</p>
-                <p class="stat-sub">Across all years</p>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="stat-card">
-                <p class="stat-label">Meetings This Month</p>
-                <p class="stat-value">{{ stats.meetings_month }}</p>
-                <p class="stat-sub">&nbsp;</p>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="stat-card">
-                <p class="stat-label">Flagged Students</p>
-                <p class="stat-value">{{ stats.flagged }}</p>
-                <p class="stat-sub">Attendance / CGPA alerts</p>
-              </div>
-            </div>
+      <!-- ══ PAGE: OVERVIEW ══ -->
+      <div class="page active" id="page-overview">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Department Overview</h1>
+            <p class="page-sub">IT Department · AY 2025–26 Academic Year</p>
           </div>
         </div>
 
-        <!-- Mentor Records Table -->
-        <div id="records">
-          <div class="section-header">
-            <span class="section-title">Mentor Summary</span>
-            <a href="/export" class="btn-sm-outline">Export →</a>
+        <!-- Stats -->
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-icon green">🎓</div>
+            <div class="stat-val">{{ stats.total_mentors }}</div>
+            <div class="stat-label">Active Mentors</div>
           </div>
+          <div class="stat-card">
+            <div class="stat-icon blue">👥</div>
+            <div class="stat-val">{{ stats.total_mentees }}</div>
+            <div class="stat-label">Total Mentees</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon gold">📅</div>
+            <div class="stat-val">{{ stats.total_meetings }}</div>
+            <div class="stat-label">Total Meetings</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">⚠️</div>
+            <div class="stat-val">{{ stats.flagged }}</div>
+            <div class="stat-label">Flagged Students</div>
+          </div>
+        </div>
 
-          <div class="data-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Mentor</th>
-                  <th>Designation</th>
-                  <th>Mentees</th>
-                  <th>Meetings (This Month)</th>
-                  <th>Pending</th>
-                  <th>Coverage</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% if mentors %}
-                  {% for mentor in mentors %}
+        <!-- Mentor performance table -->
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              Mentor Performance
+            </span>
+          </div>
+          <div class="section-body" style="padding:0">
+            <div class="tbl-wrap">
+              <table>
+                <thead>
+                  <tr><th>Mentor ID</th><th>Name</th><th>Mentees</th><th>Meetings</th><th>Load</th></tr>
+                </thead>
+                <tbody>
+                  {% for m in mentors %}
                   <tr>
-                    <td>{{ mentor.name }}</td>
-                    <td>{{ mentor.designation }}</td>
-                    <td>{{ mentor.mentee_count }}</td>
-                    <td>{{ mentor.meetings_month }}</td>
-                    <td>{{ mentor.pending }}</td>
+                    <td><span class="badge badge-green">{{ m.mentor_id }}</span></td>
+                    <td style="font-weight:600">{{ m.name }}</td>
+                    <td>{{ m.mentee_count }}</td>
+                    <td>{{ m.meeting_count }}</td>
                     <td>
-                      <div class="mini-bar">
-                        <div class="mini-bar-fill" style="width:{{mentor.coverage }}%"></div>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <div style="flex:1;height:6px;background:var(--mint-d);border-radius:100px;min-width:60px">
+                          <div style="height:100%;background:var(--sage);border-radius:100px;width:{% set pct = (m.mentee_count|int / 10 * 100)|int %}{% if pct > 100 %}100{% else %}{{ pct }}{% endif %}%"></div>
+                        </div>
+                        <span style="font-size:0.75rem;color:var(--muted)">{{ m.mentee_count }}/10</span>
                       </div>
-                      <span class="mini-bar-label">{{ mentor.coverage }}%</span>
                     </td>
-                    <td><span class="badge-status badge-{{ mentor.status_class }}">{{ mentor.status }}</span></td>
                   </tr>
                   {% endfor %}
-                {% else %}
-                  <tr>
-                    <td colspan="7" class="empty-state">No mentor records found.</td>
-                  </tr>
-                {% endif %}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        <!-- Flagged Mentees -->
-        <div>
-          <div class="section-header">
-            <span class="section-title">Flagged Mentees</span>
+        <!-- Quick flagged preview -->
+        {% if flagged %}
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title" style="color:var(--red)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Students Needing Attention ({{ flagged|length }})
+            </span>
+            <button class="btn btn-sm btn-secondary" onclick="show('flagged')">View All →</button>
           </div>
-
-          <div class="data-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Roll No.</th>
-                  <th>Mentor</th>
-                  <th>CGPA</th>
-                  <th>Attendance</th>
-                  <th>Flag Reason</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% if flagged %}
-                  {% for student in flagged %}
+          <div class="section-body" style="padding:0">
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>Roll</th><th>Name</th><th>CGPA</th><th>Attendance</th><th>Issue</th><th>Mentor</th></tr></thead>
+                <tbody>
+                  {% for m in flagged[:5] %}
                   <tr>
-                    <td>{{ student.name }}</td>
-                    <td>{{ student.roll_no }}</td>
-                    <td>{{ student.mentor_name }}</td>
-                    <td>{{ student.cgpa }}</td>
-                    <td>{{ student.attendance }}</td>
-                    <td><span class="badge-status badge-{{ student.flag_class }}">{{ student.flag_reason }}</span></td>
+                    <td><span class="roll-pill">{{ m.roll }}</span></td>
+                    <td style="font-weight:600">{{ m.name }}</td>
+                    <td><span class="badge {% if m.cgpa|float < 7 %}badge-red{% else %}badge-gold{% endif %}">{{ m.cgpa }}</span></td>
+                    <td><span class="badge {% if m.attendance|float < 75 %}badge-red{% else %}badge-gold{% endif %}">{{ m.attendance }}%</span></td>
+                    <td><span class="badge {% if m.flag_class == 'red' %}badge-red{% else %}badge-gold{% endif %}">{{ m.flag_label }}</span></td>
+                    <td><span class="badge badge-muted">{{ m.mentor_id }}</span></td>
                   </tr>
                   {% endfor %}
-                {% else %}
-                  <tr>
-                    <td colspan="6" class="empty-state">No flagged students.</td>
-                  </tr>
-                {% endif %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Generate Reports -->
-        <div id="reports">
-          <div class="section-header">
-            <span class="section-title">Generate Reports</span>
-          </div>
-
-          <div class="report-card">
-            <div class="report-type">
-              <div>
-                <p class="report-name">Monthly Meeting Summary</p>
-                <p class="report-desc">All mentor–mentee meetings for the current month</p>
-              </div>
-              <a href="/reports/monthly" class="btn-sm-accent">Generate</a>
-            </div>
-            <div class="report-type">
-              <div>
-                <p class="report-name">Mentor Activity Report</p>
-                <p class="report-desc">Meeting coverage and pending counts per mentor</p>
-              </div>
-              <a href="/reports/mentor-activity" class="btn-sm-accent">Generate</a>
-            </div>
-            <div class="report-type">
-              <div>
-                <p class="report-name">Flagged Students Report</p>
-                <p class="report-desc">Students with low CGPA or poor attendance</p>
-              </div>
-              <a href="/reports/flagged" class="btn-sm-accent">Generate</a>
-            </div>
-            <div class="report-type">
-              <div>
-                <p class="report-name">Full Department Export</p>
-                <p class="report-desc">All records — mentors, mentees, meetings (CSV)</p>
-              </div>
-              <a href="/reports/export-csv" class="btn-sm-outline">Download CSV</a>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-
+        {% endif %}
       </div>
-    </div>
 
+      <!-- ══ PAGE: FLAGGED ══ -->
+      <div class="page" id="page-flagged">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Flagged Students</h1>
+            <p class="page-sub">Students with low CGPA (&lt;7.0) or low attendance (&lt;75%)</p>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title" style="color:var(--red)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+              At-Risk Students — {{ flagged|length }} total
+            </span>
+          </div>
+          <div class="section-body" style="padding:0">
+            {% if flagged %}
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>Roll</th><th>Name</th><th>Dept</th><th>CGPA</th><th>Attendance</th><th>Issue</th><th>Mentor</th></tr></thead>
+                <tbody>
+                  {% for m in flagged %}
+                  <tr>
+                    <td><span class="roll-pill">{{ m.roll }}</span></td>
+                    <td style="font-weight:600">{{ m.name }}</td>
+                    <td>{{ m.dept }}</td>
+                    <td><span class="badge {% if m.cgpa|float < 7 %}badge-red{% else %}badge-green{% endif %}">{{ m.cgpa }}</span></td>
+                    <td><span class="badge {% if m.attendance|float < 75 %}badge-red{% else %}badge-green{% endif %}">{{ m.attendance }}%</span></td>
+                    <td><span class="badge {% if m.flag_class == 'red' %}badge-red{% else %}badge-gold{% endif %}">{{ m.flag_label }}</span></td>
+                    <td><span class="badge badge-muted">{{ m.mentor_id }}</span></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="empty">
+              <div class="empty-icon">🎉</div>
+              <p class="empty-text">No flagged students — everyone is on track!</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: ALL MENTORS ══ -->
+      <div class="page" id="page-mentors">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">All Mentors</h1>
+            <p class="page-sub">Directory of all mentors in the department</p>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              Mentor Directory
+            </span>
+          </div>
+          <div class="section-body" style="padding:0">
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>Mentor ID</th><th>Username</th><th>Mentees Assigned</th><th>Meetings Conducted</th></tr></thead>
+                <tbody>
+                  {% for m in mentors %}
+                  <tr>
+                    <td><span class="badge badge-green">{{ m.mentor_id }}</span></td>
+                    <td style="font-weight:600">{{ m.name }}</td>
+                    <td>{{ m.mentee_count }}</td>
+                    <td>{{ m.meeting_count }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: ALL MENTEES ══ -->
+      <div class="page" id="page-mentees">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">All Mentees</h1>
+            <p class="page-sub">Complete student roster across all mentors</p>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Full Mentee Roster — {{ all_mentees|length }} students
+            </span>
+          </div>
+          <div class="section-body" style="padding:0">
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>Roll</th><th>Name</th><th>Dept</th><th>CGPA</th><th>Attendance</th><th>Mentor</th><th>Status</th></tr></thead>
+                <tbody>
+                  {% for m in all_mentees %}
+                  <tr>
+                    <td><span class="roll-pill">{{ m.roll }}</span></td>
+                    <td style="font-weight:600">{{ m.name }}</td>
+                    <td>{{ m.dept }}</td>
+                    <td><span class="badge {% if m.cgpa|float >= 8 %}badge-green{% elif m.cgpa|float >= 7 %}badge-gold{% else %}badge-red{% endif %}">{{ m.cgpa }}</span></td>
+                    <td><span class="badge {% if m.attendance|float >= 85 %}badge-green{% elif m.attendance|float >= 75 %}badge-gold{% else %}badge-red{% endif %}">{{ m.attendance }}%</span></td>
+                    <td><span class="badge badge-muted">{{ m.mentor_id }}</span></td>
+                    <td>
+                      {% if m.flag == 'ok' %}
+                        <span class="badge badge-green">✓ Good</span>
+                      {% else %}
+                        <span class="badge badge-red">⚠ {{ m.get('flag_label', m.flag) }}</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: ALL MEETINGS ══ -->
+      <div class="page" id="page-meetings">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">All Meetings</h1>
+            <p class="page-sub">Complete meeting log across all mentor-mentee pairs</p>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Meeting Log — {{ all_meetings|length }} total
+            </span>
+          </div>
+          <div class="section-body" style="padding:0">
+            {% if all_meetings %}
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Mentee</th><th>Roll</th><th>Mentor</th><th>Date</th><th>Time</th><th>Mode</th><th>Status</th></tr></thead>
+                <tbody>
+                  {% for m in all_meetings %}
+                  <tr>
+                    <td style="color:var(--muted-l);font-size:0.78rem">{{ m.id }}</td>
+                    <td style="font-weight:600">{{ m.mentee_name }}</td>
+                    <td><span class="roll-pill">{{ m.roll }}</span></td>
+                    <td><span class="badge badge-green">{{ m.mentor_id }}</span></td>
+                    <td>{{ m.date }}</td>
+                    <td>{{ m.time }}</td>
+                    <td><span class="badge badge-muted">{{ m.mode }}</span></td>
+                    <td><span class="badge {{ m.status_class }}">{{ m.status }}</span></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="empty">
+              <div class="empty-icon">📅</div>
+              <p class="empty-text">No meetings recorded yet.</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </main>
   </div>
+</div>
 
+<script>
+  function show(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    document.getElementById('nav-' + id).classList.add('active');
+  }
+  function toggleDd() {
+    document.getElementById('profileDd').classList.toggle('open');
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.profile-wrap'))
+      document.getElementById('profileDd').classList.remove('open');
+  });
+</script>
 </body>
 </html>

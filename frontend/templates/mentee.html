@@ -3,154 +3,316 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MMS – Mentee Dashboard</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
-  <link rel="stylesheet" href="../static/base.css"/>
-  <link rel="stylesheet" href="../static/mentee.css"/>
+  <title>MentorSpace – Mentee Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
 </head>
 <body>
+<div class="shell">
 
-  <div class="app-wrapper">
-
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <p class="sidebar-brand-tag">SSN College of Engg.</p>
-        <p class="sidebar-brand-name">Mentoring<br>Management</p>
-        <span class="sidebar-role-badge">Mentee</span>
+  <!-- ── Navbar ── -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-icon">M</div>
+      <div>
+        <p class="brand-name">MentorSpace</p>
+        <p class="brand-sub">SSN College of Engineering</p>
       </div>
+    </div>
+    <div class="navbar-right">
+      <span class="nav-badge">Mentee</span>
+      <div class="profile-wrap">
+        <button class="profile-btn" onclick="toggleDd()">
+          <div class="avatar">{{ current_user.initials }}</div>
+          <span class="profile-name-text">{{ current_user.name }}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="dropdown" id="profileDd">
+          <div class="dd-head">
+            <p class="dd-name">{{ current_user.name }}</p>
+            <p class="dd-role">Mentee</p>
+          </div>
+          <hr class="dd-divider"/>
+          <a href="/logout" class="dd-item red">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Log Out
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="body-area">
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
       <nav class="sidebar-nav">
-        <p class="sidebar-section-label">Account</p>
-        <a href="#profile" class="sidebar-link active"><span class="icon">◈</span> View Profile</a>
-        <p class="sidebar-section-label">Meetings</p>
-        <a href="#request" class="sidebar-link"><span class="icon">+</span> Request Meeting</a>
-        <a href="#meetings" class="sidebar-link"><span class="icon">○</span> View Meetings</a>
+        <p class="nav-group">Dashboard</p>
+        <button class="nav-item active" id="nav-profile" onclick="show('profile')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          My Profile
+        </button>
+        <button class="nav-item" id="nav-meetings" onclick="show('meetings')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          My Meetings
+        </button>
+        <button class="nav-item" id="nav-requests" onclick="show('requests')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          My Requests
+        </button>
+        <button class="nav-item" id="nav-request-new" onclick="show('request-new')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Request Meeting
+        </button>
       </nav>
-      <div class="sidebar-footer">
-        <a href="/logout">↩ Logout</a>
+      <div class="sidebar-foot">
+        <a href="/logout" class="nav-item" style="color:var(--red)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Logout
+        </a>
       </div>
     </aside>
 
-    <div class="main-content">
+    <!-- ── Main ── -->
+    <main class="main">
 
-      <div class="topbar">
-        <span class="topbar-title">My Dashboard</span>
-        <span class="topbar-meta">AY 2025–26 &nbsp;·&nbsp; Dept. of IT</span>
+      {% if message %}
+      <div class="toast toast-success">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        {{ message }}
       </div>
+      {% endif %}
+      {% if error %}
+      <div class="toast toast-error">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        {{ error }}
+      </div>
+      {% endif %}
 
-      <div class="page-body">
-
-        <!-- Profile -->
-        <div id="profile">
-          <div class="section-header" style="margin-top:0">
-            <span class="section-title">Profile</span>
+      <!-- ══ PAGE: PROFILE ══ -->
+      <div class="page active" id="page-profile">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">My Profile</h1>
+            <p class="page-sub">Your academic information and mentor details</p>
           </div>
-          <div class="profile-card">
-            <div class="profile-avatar">{{ current_user.initials }}</div>
-            <div class="profile-info">
-              <p class="profile-name">{{ current_user.name }}</p>
-              <p class="profile-id">{{ current_user.roll_no }} &nbsp;·&nbsp; {{ current_user.year }} Year B.E. &nbsp;·&nbsp; {{ current_user.department }}</p>
-              <div class="profile-grid">
-                <div>
-                  <p class="profile-field-label">Mentor</p>
-                  <p class="profile-field-value">{{ current_user.mentor_name }}</p>
-                </div>
-                <div>
-                  <p class="profile-field-label">Section</p>
-                  <p class="profile-field-value">{{ current_user.section }}</p>
-                </div>
-                <div>
-                  <p class="profile-field-label">CGPA</p>
-                  <p class="profile-field-value">{{ current_user.cgpa }}</p>
-                </div>
-                <div>
-                  <p class="profile-field-label">Arrears</p>
-                  <p class="profile-field-value">{{ current_user.arrears }}</p>
-                </div>
-                <div>
-                  <p class="profile-field-label">Attendance</p>
-                  <p class="profile-field-value">{{ current_user.attendance }}</p>
-                </div>
-                <div>
-                  <p class="profile-field-label">Email</p>
-                  <p class="profile-field-value">{{ current_user.email }}</p>
-                </div>
-              </div>
+        </div>
+
+        <!-- Hero card -->
+        <div class="profile-hero">
+          <div class="profile-avatar-lg">{{ current_user.initials }}</div>
+          <div>
+            <p class="profile-name">{{ current_user.name }}</p>
+            <p class="profile-roll">{{ current_user.roll_no }}</p>
+            <div class="profile-tags">
+              <span class="profile-tag">{{ current_user.department }}</span>
+              <span class="profile-tag">Mentor: {{ current_user.mentor_name }}</span>
+              <span class="profile-tag">ID: {{ current_user.mentor_id }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Request Meeting -->
-        <div id="request">
-          <div class="section-header">
-            <span class="section-title">Request a Meeting</span>
+        <!-- Stat strip -->
+        <div class="profile-stats">
+          <div class="profile-stat-card">
+            <div class="profile-stat-val" style="color:{% if current_user.cgpa != '-' and current_user.cgpa|float >= 8 %}var(--sage-d){% elif current_user.cgpa != '-' and current_user.cgpa|float >= 7 %}var(--amber){% else %}var(--red){% endif %}">
+              {{ current_user.cgpa }}
+            </div>
+            <div class="profile-stat-label">CGPA</div>
           </div>
-          <div class="request-card">
-            <form method="POST" action="/request-meeting">
-              <div class="row g-3">
-                <div class="col-md-4">
-                  <label class="form-label-mono" for="req-date">Preferred Date</label>
-                  <input type="date" class="form-control" id="req-date" name="date" required/>
+          <div class="profile-stat-card">
+            <div class="profile-stat-val" style="color:{% if current_user.attendance != '-' and current_user.attendance|float >= 85 %}var(--sage-d){% elif current_user.attendance != '-' and current_user.attendance|float >= 75 %}var(--amber){% else %}var(--red){% endif %}">
+              {{ current_user.attendance }}{% if current_user.attendance != '-' %}%{% endif %}
+            </div>
+            <div class="profile-stat-label">Attendance</div>
+          </div>
+          <div class="profile-stat-card">
+            <div class="profile-stat-val">{{ meetings|length }}</div>
+            <div class="profile-stat-label">Total Meetings</div>
+          </div>
+        </div>
+
+        <!-- Info section -->
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Account Details
+            </span>
+          </div>
+          <div class="section-body">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1.4rem">
+              {% for label, val in [('Roll Number', current_user.roll_no), ('Full Name', current_user.name), ('Department', current_user.department), ('Mentor ID', current_user.mentor_id), ('Mentor Name', current_user.mentor_name)] %}
+              <div>
+                <p style="font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">{{ label }}</p>
+                <p style="font-weight:600;color:var(--txt)">{{ val }}</p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: MEETINGS ══ -->
+      <div class="page" id="page-meetings">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">My Meetings</h1>
+            <p class="page-sub">All meetings scheduled with your mentor</p>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Meeting Schedule
+            </span>
+          </div>
+          <div class="section-body" style="padding:0">
+            {% if meetings %}
+            <div class="tbl-wrap">
+              <table>
+                <thead>
+                  <tr><th>#</th><th>Date</th><th>Time</th><th>Mentor</th><th>Mode</th><th>Agenda</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  {% for m in meetings %}
+                  <tr>
+                    <td style="color:var(--muted-l);font-size:0.78rem">{{ m.id }}</td>
+                    <td>{{ m.date }}</td>
+                    <td>{{ m.time }}</td>
+                    <td><span class="badge badge-muted">{{ m.mentor_id }}</span></td>
+                    <td>{{ m.mode }}</td>
+                    <td>{{ m.agenda }}</td>
+                    <td><span class="badge {{ m.status_class }}">{{ m.status }}</span></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="empty">
+              <div class="empty-icon">📅</div>
+              <p class="empty-text">No meetings scheduled. Request one from your mentor!</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: REQUESTS ══ -->
+      <div class="page" id="page-requests">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">My Requests</h1>
+            <p class="page-sub">Track the status of your meeting requests</p>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Request History
+            </span>
+          </div>
+          <div class="section-body" style="padding:0">
+            {% if requests %}
+            <div class="tbl-wrap">
+              <table>
+                <thead>
+                  <tr><th>#</th><th>Date</th><th>Time</th><th>Mode</th><th>Purpose</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  {% for r in requests %}
+                  <tr>
+                    <td style="color:var(--muted-l);font-size:0.78rem">{{ r.id }}</td>
+                    <td>{{ r.date }}</td>
+                    <td>{{ r.time }}</td>
+                    <td><span class="badge badge-muted">{{ r.mode }}</span></td>
+                    <td>{{ r.purpose }}</td>
+                    <td><span class="badge {{ r.status_class }}">{{ r.status }}</span></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="empty">
+              <div class="empty-icon">📋</div>
+              <p class="empty-text">You haven't made any requests yet.</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: REQUEST NEW ══ -->
+      <div class="page" id="page-request-new">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Request a Meeting</h1>
+            <p class="page-sub">Send a meeting request to your mentor</p>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New Meeting Request
+            </span>
+          </div>
+          <div class="section-body">
+            <form method="POST" action="/mentee/request-meeting">
+              <div class="form-grid">
+                <div class="field">
+                  <label>Mentor ID *</label>
+                  <input type="text" name="mentor_id" value="{{ current_user.mentor_id }}" placeholder="e.g. M001" required/>
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label-mono" for="req-time">Preferred Time</label>
-                  <input type="time" class="form-control" id="req-time" name="time" required/>
+                <div class="form-row">
+                  <div class="field"><label>Preferred Date *</label><input type="date" name="date" required/></div>
+                  <div class="field"><label>Preferred Time *</label><input type="time" name="time" required/></div>
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label-mono" for="req-mode">Mode</label>
-                  <select class="form-select" id="req-mode" name="mode">
+                <div class="field">
+                  <label>Mode</label>
+                  <select name="mode">
                     <option value="in-person">In-Person</option>
                     <option value="online">Online</option>
                   </select>
                 </div>
-                <div class="col-12">
-                  <label class="form-label-mono" for="req-purpose">Purpose / Agenda</label>
-                  <textarea class="form-control" id="req-purpose" name="purpose" rows="2" placeholder="Briefly describe the reason for this meeting..."></textarea>
+                <div class="field">
+                  <label>Purpose / Agenda *</label>
+                  <textarea name="purpose" placeholder="Briefly describe the purpose of this meeting..." required></textarea>
                 </div>
-                <div class="col-12">
-                  <button type="submit" class="btn-sm-accent">Submit Request →</button>
+                <div>
+                  <button type="submit" class="btn btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Send Request
+                  </button>
                 </div>
               </div>
             </form>
           </div>
         </div>
-
-        <!-- Meetings -->
-        <div id="meetings">
-          <div class="section-header">
-            <span class="section-title">My Meetings</span>
-          </div>
-          <div class="data-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Mentor</th>
-                  <th>Mode</th>
-                  <th>Agenda</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for meeting in meetings %}
-                <tr>
-                  <td>{{ meeting.date }}</td>
-                  <td>{{ meeting.time }}</td>
-                  <td>{{ meeting.mentor_name }}</td>
-                  <td>{{ meeting.mode }}</td>
-                  <td>{{ meeting.agenda }}</td>
-                  <td><span class="badge-status badge-{{ meeting.status_class }}">{{ meeting.status }}</span></td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </div>
-    </div>
 
+    </main>
   </div>
+</div>
 
+<script>
+  function show(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    document.getElementById('nav-' + id).classList.add('active');
+  }
+  function toggleDd() {
+    document.getElementById('profileDd').classList.toggle('open');
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.profile-wrap'))
+      document.getElementById('profileDd').classList.remove('open');
+  });
+</script>
 </body>
 </html>
