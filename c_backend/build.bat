@@ -1,11 +1,7 @@
 @echo off
-cd /d "%~dp0"
-gcc -Wall -O2 auth.c    -o auth.exe    || goto :err
-gcc -Wall -O2 mentor.c  -o mentor.exe  || goto :err
-gcc -Wall -O2 mentee.c  -o mentee.exe  || goto :err
-gcc -Wall -O2 manager.c -o manager.exe || goto :err
-echo Built: auth.exe mentor.exe mentee.exe manager.exe
-exit /b 0
-:err
-echo Build failed.
-exit /b 1
+echo Compiling MMS C Backend...
+gcc auth.c    -o auth.exe    -lm
+gcc mentor.c  -o mentor.exe  -lm
+gcc mentee.c  -o mentee.exe  -lm
+gcc manager.c -o manager.exe -lm
+echo Done.

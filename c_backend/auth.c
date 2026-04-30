@@ -1,37 +1,38 @@
 /*
- * auth.c  —  Authentication Module  (REFACTORED to use linked list + hash table)
- * Called by Flask: ./auth <username> <password>
- * Output:
- *   SUCCESS:<role>:<user_id>:<entity_id>
- *   FAIL:invalid_credentials | FAIL:missing_args
+ * auth.c — Authentication Module
+ * Usage : ./auth <username> <password>
+ * Output: SUCCESS:<role>:<user_id>:<entity_id>
+ *         FAIL:invalid_credentials
  *
- * Data flow:
- *   main() loads users.txt ONCE into a linked list, builds a hash table,
- *   does an O(1) lookup, prints, exits. No saves needed (read-only).
+ * Uses: User BST (key = username) for O(log n) lookup.
  */
+
 #include "structures.h"
 
-/* Authenticate by hash lookup; password compared in memory only. */
-static void authenticate(struct UserHash *uh, const char *username, const char *password) {
-    struct User *u = userHashFindByName(uh, username);
-    if (u && strcmp(u->password, password) == 0) {
-        printf("SUCCESS:%s:%d:%s\n", u->role, u->id, u->entity_id);
-        return;
-    }
-    printf("FAIL:invalid_credentials\n");
-}
-
 int main(int argc, char *argv[]) {
-    if (argc < 3) { printf("FAIL:missing_args\n"); return 1; }
+    if (argc < 3) {
+        printf("FAIL:missing_args\n");
+        return 1;
+    }
 
-    /* ── LOAD ONCE ───────────────────────────────────────────── */
-    struct User *users = loadUsersList();
-    struct UserHash uh;
-    buildUserHash(&uh, users);
+    char *username = argv[1];
+    char *password = argv[2];
 
-    /* ── OPERATE IN MEMORY ───────────────────────────────────── */
-    authenticate(&uh, argv[1], argv[2]);
+    /* Load users.txt into BST */
+    struct UserNode *root = loadUsers();
 
-    /* ── No save: read-only command. ─────────────────────────── */
+    /* BST search by username — O(log n) */
+    struct UserNode *found = userBstSearch(root, username);
+
+    if (found != NULL && strcmp(found->data.password, password) == 0) {
+        printf("SUCCESS:%s:%d:%s\n",
+               found->data.role,
+               found->data.id,
+               found->data.entity_id);
+    } else {
+        printf("FAIL:invalid_credentials\n");
+    }
+
+    userBstFree(root);
     return 0;
 }
