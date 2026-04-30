@@ -6,11 +6,7 @@
  *   BST          : Users (key = username), Mentees (key = roll)
  *   Linked list  : Meetings, Notes
  *   Queue        : Requests (FIFO, linked list)
- *
- * Rules:
- *   No typedef, no inline, no complex macros.
- *   Separate data struct and BST node struct for each entity.
- *   Load from file -> operate on data structures -> save to file.
+ 
  */
 
 #ifndef STRUCTURES_H
