@@ -15,6 +15,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, R
 import subprocess
 import os
 import sys
+from flask import Response
 
 # ── Paths ──────────────────────────────────────────────────────
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
@@ -512,12 +513,23 @@ def manager_dashboard():
         message=request.args.get("message"), error=error)
 
 
+
+
 @app.route("/manager/export")
 def manager_export():
-    if not login_required("manager"): return redirect(url_for("home"))
+    if not login_required("manager"):
+        return redirect(url_for("home"))
+
     lines = run(MANAGER_EXE, ["export_report"])
     text = "\n".join(lines)
-    return Response(text, mimetype="text/plain")
+
+    return Response(
+        text,
+        mimetype="text/plain",
+        headers={
+            "Content-Disposition": "attachment;filename=report.txt"
+        }
+    )
 
 
 # ══════════════════════════════════════════════════════════════
