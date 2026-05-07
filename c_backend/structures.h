@@ -1,49 +1,39 @@
 /*
- * structures.h  —  Shared Data Structures (REFACTORED)
- * Mentoring Management System, SSN College of Engineering
- *
- * Design rules followed by every module:
- *   1. main() loads ALL data files ONCE into linked lists.
- *   2. Hash tables and (optional) BSTs are built from those lists.
- *   3. All operations work IN MEMORY on the data structures.
- *   4. main() saves the (modified) lists back to disk ONCE before exit.
- *
- * No function (other than the load/save helpers used by main) touches files.
+ * structures.h
+ * Mentoring Management System — SSN College of Engineering
  *
  * Data structures used:
- *   - Singly linked lists  : primary storage for users, mentees, notes,
- *                            meetings.
- *   - Queue (linked list)  : meeting requests, processed FIFO.
- *   - Hash tables (chaining): fast lookup of mentees by roll and users
- *                             by username / entity_id.
- *   - Binary Search Tree   : optional, used by manager.c only to print
- *                            mentees in sorted order (by roll).
- *
- * Style: plain C, no typedef, simple comments, easy to follow.
+ *   BST          : Users (key = username), Mentees (key = roll)
+ *   Linked list  : Meetings, Notes
+ *   Queue        : Requests (FIFO, linked list)
+ 
  */
 
 #ifndef STRUCTURES_H
 #define STRUCTURES_H
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-/* ── Limits ──────────────────────────────────────────────────── */
-#define MAX_LEN       64
+/* ── Limits ───────────────────────────────────────────────── */
+#define MAX_LEN      64
 #define MAX_NOTE_LEN 256
-#define HASH_SIZE     53     /* small prime, fine for student project */
 
-/* ── File Paths (relative to c_backend/) ─────────────────────── */
+/* ── File Paths ───────────────────────────────────────────── */
 #define USERS_FILE    "../data/users.txt"
 #define MENTEES_FILE  "../data/mentees.txt"
 #define MEETINGS_FILE "../data/meetings.txt"
 #define NOTES_FILE    "../data/notes.txt"
 #define REQUESTS_FILE "../data/requests.txt"
 
-/* ════════════════════════════════════════════════════════════════
-   RECORD STRUCTS  (kept identical in fields to original version)
-   ════════════════════════════════════════════════════════════════ */
+
+/* =============================================================
+   DATA STRUCTS
+   Each struct holds only the data fields for that entity.
+   The BST node struct (below) wraps these with tree pointers.
+============================================================= */
 
 struct User {
     int  id;
@@ -51,9 +41,6 @@ struct User {
     char password[MAX_LEN];
     char role[MAX_LEN];
     char entity_id[MAX_LEN];
-    struct User *next;            /* linked-list pointer  */
-    struct User *hnext_user;      /* hash chain (by username)  */
-    struct User *hnext_entity;    /* hash chain (by entity_id) */
 };
 
 struct Mentee {
@@ -63,8 +50,6 @@ struct Mentee {
     char cgpa[MAX_LEN];
     char attendance[MAX_LEN];
     char mentor_id[MAX_LEN];
-    struct Mentee *next;          /* linked-list pointer */
-    struct Mentee *hnext;         /* hash chain (by roll) */
 };
 
 struct Note {
@@ -85,7 +70,7 @@ struct Request {
     char mode[MAX_LEN];
     char purpose[MAX_NOTE_LEN];
     char status[MAX_LEN];
-    struct Request *next;         /* queue link (FIFO) */
+    struct Request *next;
 };
 
 struct Meeting {
@@ -100,275 +85,387 @@ struct Meeting {
     struct Meeting *next;
 };
 
-/* ── Queue (for meeting requests) ────────────────────────────── */
+
+/* =============================================================
+   BST NODE STRUCTS
+   Separate node struct wraps data + left/right pointers.
+   This keeps data clean and tree structure separate.
+============================================================= */
+
+struct UserNode {
+    struct User     data;
+    struct UserNode *left;
+    struct UserNode *right;
+};
+
+struct MenteeNode {
+    struct Mentee     data;
+    struct MenteeNode *left;
+    struct MenteeNode *right;
+};
+
+
+/* =============================================================
+   QUEUE STRUCT (for Requests — FIFO)
+============================================================= */
+
 struct RequestQueue {
-    struct Request *head;   /* dequeue from head */
-    struct Request *tail;   /* enqueue at tail   */
+    struct Request *head;
+    struct Request *tail;
 };
 
-/* ── Hash tables ─────────────────────────────────────────────── */
-struct MenteeHash { struct Mentee *bucket[HASH_SIZE]; };
-struct UserHash   { struct User   *byUsername[HASH_SIZE];
-                    struct User   *byEntity[HASH_SIZE]; };
 
-/* ── BST node (manager display only) ─────────────────────────── */
-struct BstNode {
-    struct Mentee  *m;       /* points to mentee in the linked list */
-    struct BstNode *left;
-    struct BstNode *right;
-};
+/* =============================================================
+   HELPER: safe string copy
+============================================================= */
 
-/* ════════════════════════════════════════════════════════════════
-   SIMPLE HELPERS
-   ════════════════════════════════════════════════════════════════ */
-
-static inline unsigned int hashStr(const char *s) {
-    unsigned int h = 0;
-    while (*s) { h = h * 31u + (unsigned char)(*s); s++; }
-    return h % HASH_SIZE;
-}
-
-static inline void copyField(char *dst, const char *src, int max) {
+void copyField(char *dst, const char *src, int max) {
     strncpy(dst, src, max - 1);
     dst[max - 1] = '\0';
 }
 
-/* ════════════════════════════════════════════════════════════════
-   LINKED LIST: APPEND HELPERS  (preserve file/insertion order)
-   ════════════════════════════════════════════════════════════════ */
 
-static inline void appendUser(struct User **head, struct User **tail, struct User *u) {
-    u->next = NULL;
-    if (!*head) { *head = *tail = u; } else { (*tail)->next = u; *tail = u; }
-}
-static inline void appendMentee(struct Mentee **head, struct Mentee **tail, struct Mentee *m) {
-    m->next = NULL;
-    if (!*head) { *head = *tail = m; } else { (*tail)->next = m; *tail = m; }
-}
-static inline void appendNote(struct Note **head, struct Note **tail, struct Note *n) {
-    n->next = NULL;
-    if (!*head) { *head = *tail = n; } else { (*tail)->next = n; *tail = n; }
-}
-static inline void appendMeeting(struct Meeting **head, struct Meeting **tail, struct Meeting *mt) {
-    mt->next = NULL;
-    if (!*head) { *head = *tail = mt; } else { (*tail)->next = mt; *tail = mt; }
+/* =============================================================
+   HELPER: today's date string
+============================================================= */
+
+void getToday(char out[MAX_LEN]) {
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+    strftime(out, MAX_LEN, "%Y-%m-%d", tm);
 }
 
-/* ════════════════════════════════════════════════════════════════
-   QUEUE OPERATIONS (Request)
-   ════════════════════════════════════════════════════════════════ */
 
-static inline void queueInit(struct RequestQueue *q) { q->head = q->tail = NULL; }
+/* =============================================================
+   BST OPERATIONS — User (key = username)
+============================================================= */
 
-static inline void enqueueRequest(struct RequestQueue *q, struct Request *r) {
+struct UserNode *userBstInsert(struct UserNode *root, struct User data) {
+    if (root == NULL) {
+        struct UserNode *n = calloc(1, sizeof(struct UserNode));
+        n->data  = data;
+        n->left  = NULL;
+        n->right = NULL;
+        return n;
+    }
+    int cmp = strcmp(data.username, root->data.username);
+    if (cmp < 0) {
+        root->left  = userBstInsert(root->left,  data);
+    } else if (cmp > 0) {
+        root->right = userBstInsert(root->right, data);
+    }
+    return root;
+}
+
+struct UserNode *userBstSearch(struct UserNode *root, const char *username) {
+    if (root == NULL) return NULL;
+    int cmp = strcmp(username, root->data.username);
+    if (cmp == 0) return root;
+    if (cmp < 0)  return userBstSearch(root->left,  username);
+    return             userBstSearch(root->right, username);
+}
+
+/* Search by entity_id — linear scan because key is username not entity_id */
+struct UserNode *userBstSearchByEntity(struct UserNode *root, const char *entity_id) {
+    if (root == NULL) return NULL;
+    if (strcmp(root->data.entity_id, entity_id) == 0) return root;
+    struct UserNode *left  = userBstSearchByEntity(root->left,  entity_id);
+    if (left) return left;
+    return                  userBstSearchByEntity(root->right, entity_id);
+}
+
+void userBstFree(struct UserNode *root) {
+    if (root == NULL) return;
+    userBstFree(root->left);
+    userBstFree(root->right);
+    free(root);
+}
+
+/* Inorder traversal: visits every user in ascending username order */
+void userBstInorder(struct UserNode *root, void (*visit)(struct User *)) {
+    if (root == NULL) return;
+    userBstInorder(root->left,  visit);
+    visit(&root->data);
+    userBstInorder(root->right, visit);
+}
+
+/* Save helper used by userBstSave */
+static FILE *_userSaveFp = NULL;
+void _userSaveVisitor(struct User *u) {
+    fprintf(_userSaveFp, "%d,%s,%s,%s,%s\n",
+            u->id, u->username, u->password, u->role, u->entity_id);
+}
+
+void userBstSave(struct UserNode *root) {
+    _userSaveFp = fopen(USERS_FILE, "w");
+    if (!_userSaveFp) return;
+    userBstInorder(root, _userSaveVisitor);
+    fclose(_userSaveFp);
+    _userSaveFp = NULL;
+}
+
+
+/* =============================================================
+   BST OPERATIONS — Mentee (key = roll)
+============================================================= */
+
+struct MenteeNode *menteeBstInsert(struct MenteeNode *root, struct Mentee data) {
+    if (root == NULL) {
+        struct MenteeNode *n = calloc(1, sizeof(struct MenteeNode));
+        n->data  = data;
+        n->left  = NULL;
+        n->right = NULL;
+        return n;
+    }
+    int cmp = strcmp(data.roll, root->data.roll);
+    if (cmp < 0) {
+        root->left  = menteeBstInsert(root->left,  data);
+    } else if (cmp > 0) {
+        root->right = menteeBstInsert(root->right, data);
+    }
+    return root;
+}
+
+struct MenteeNode *menteeBstSearch(struct MenteeNode *root, const char *roll) {
+    if (root == NULL) return NULL;
+    int cmp = strcmp(roll, root->data.roll);
+    if (cmp == 0) return root;
+    if (cmp < 0)  return menteeBstSearch(root->left,  roll);
+    return              menteeBstSearch(root->right, roll);
+}
+
+/* Find the smallest node (leftmost) — used during delete */
+struct MenteeNode *menteeBstMin(struct MenteeNode *root) {
+    while (root->left != NULL) root = root->left;
+    return root;
+}
+
+struct MenteeNode *menteeBstDelete(struct MenteeNode *root, const char *roll) {
+    if (root == NULL) return NULL;
+    int cmp = strcmp(roll, root->data.roll);
+    if (cmp < 0) {
+        root->left  = menteeBstDelete(root->left,  roll);
+    } else if (cmp > 0) {
+        root->right = menteeBstDelete(root->right, roll);
+    } else {
+        /* Found the node to delete */
+        if (root->left == NULL) {
+            struct MenteeNode *tmp = root->right;
+            free(root);
+            return tmp;
+        }
+        if (root->right == NULL) {
+            struct MenteeNode *tmp = root->left;
+            free(root);
+            return tmp;
+        }
+        /* Two children: replace with inorder successor (min of right subtree) */
+        struct MenteeNode *successor = menteeBstMin(root->right);
+        root->data  = successor->data;
+        root->right = menteeBstDelete(root->right, successor->data.roll);
+    }
+    return root;
+}
+
+void menteeBstFree(struct MenteeNode *root) {
+    if (root == NULL) return;
+    menteeBstFree(root->left);
+    menteeBstFree(root->right);
+    free(root);
+}
+
+/* Inorder traversal: visits every mentee in ascending roll order */
+void menteeBstInorder(struct MenteeNode *root, void (*visit)(struct Mentee *)) {
+    if (root == NULL) return;
+    menteeBstInorder(root->left,  visit);
+    visit(&root->data);
+    menteeBstInorder(root->right, visit);
+}
+
+/* Save helper used by menteeBstSave */
+static FILE *_menteeSaveFp = NULL;
+void _menteeSaveVisitor(struct Mentee *m) {
+    fprintf(_menteeSaveFp, "%s,%s,%s,%s,%s,%s\n",
+            m->roll, m->name, m->dept, m->cgpa, m->attendance, m->mentor_id);
+}
+
+void menteeBstSave(struct MenteeNode *root) {
+    _menteeSaveFp = fopen(MENTEES_FILE, "w");
+    if (!_menteeSaveFp) return;
+    menteeBstInorder(root, _menteeSaveVisitor);
+    fclose(_menteeSaveFp);
+    _menteeSaveFp = NULL;
+}
+
+
+/* =============================================================
+   QUEUE OPERATIONS — Request (FIFO linked list)
+============================================================= */
+
+void queueInit(struct RequestQueue *q) {
+    q->head = NULL;
+    q->tail = NULL;
+}
+
+void queueEnqueue(struct RequestQueue *q, struct Request *r) {
     r->next = NULL;
-    if (!q->head) { q->head = q->tail = r; }
-    else          { q->tail->next = r; q->tail = r; }
+    if (q->tail == NULL) {
+        q->head = r;
+        q->tail = r;
+    } else {
+        q->tail->next = r;
+        q->tail = r;
+    }
 }
 
-/* dequeue removes and returns head (FIFO); not always needed but provided */
-static inline struct Request *dequeueRequest(struct RequestQueue *q) {
-    if (!q->head) return NULL;
+struct Request *queueDequeue(struct RequestQueue *q) {
+    if (q->head == NULL) return NULL;
     struct Request *r = q->head;
     q->head = r->next;
-    if (!q->head) q->tail = NULL;
+    if (q->head == NULL) q->tail = NULL;
     r->next = NULL;
     return r;
 }
 
-/* ════════════════════════════════════════════════════════════════
-   HASH TABLE OPERATIONS
-   ════════════════════════════════════════════════════════════════ */
+void queueFree(struct RequestQueue *q) {
+    struct Request *cur = q->head;
+    while (cur != NULL) {
+        struct Request *tmp = cur;
+        cur = cur->next;
+        free(tmp);
+    }
+    q->head = NULL;
+    q->tail = NULL;
+}
 
-static inline void menteeHashInit(struct MenteeHash *h) {
-    for (int i = 0; i < HASH_SIZE; i++) h->bucket[i] = NULL;
-}
-static inline void menteeHashInsert(struct MenteeHash *h, struct Mentee *m) {
-    unsigned int idx = hashStr(m->roll);
-    m->hnext = h->bucket[idx];
-    h->bucket[idx] = m;
-}
-static inline struct Mentee *menteeHashFind(struct MenteeHash *h, const char *roll) {
-    unsigned int idx = hashStr(roll);
-    for (struct Mentee *p = h->bucket[idx]; p; p = p->hnext)
-        if (strcmp(p->roll, roll) == 0) return p;
-    return NULL;
-}
-static inline void menteeHashRemove(struct MenteeHash *h, const char *roll) {
-    unsigned int idx = hashStr(roll);
-    struct Mentee *prev = NULL, *p = h->bucket[idx];
-    while (p) {
-        if (strcmp(p->roll, roll) == 0) {
-            if (prev) prev->hnext = p->hnext; else h->bucket[idx] = p->hnext;
-            return;
-        }
-        prev = p; p = p->hnext;
+
+/* =============================================================
+   LINKED LIST HELPERS — Meetings
+============================================================= */
+
+void meetingAppend(struct Meeting **head, struct Meeting **tail, struct Meeting *m) {
+    m->next = NULL;
+    if (*head == NULL) {
+        *head = m;
+        *tail = m;
+    } else {
+        (*tail)->next = m;
+        *tail = m;
     }
 }
 
-static inline void userHashInit(struct UserHash *h) {
-    for (int i = 0; i < HASH_SIZE; i++) { h->byUsername[i] = NULL; h->byEntity[i] = NULL; }
-}
-static inline void userHashInsert(struct UserHash *h, struct User *u) {
-    unsigned int a = hashStr(u->username);
-    u->hnext_user = h->byUsername[a];
-    h->byUsername[a] = u;
-    unsigned int b = hashStr(u->entity_id);
-    u->hnext_entity = h->byEntity[b];
-    h->byEntity[b] = u;
-}
-static inline struct User *userHashFindByName(struct UserHash *h, const char *username) {
-    unsigned int idx = hashStr(username);
-    for (struct User *p = h->byUsername[idx]; p; p = p->hnext_user)
-        if (strcmp(p->username, username) == 0) return p;
-    return NULL;
-}
-static inline struct User *userHashFindByEntity(struct UserHash *h, const char *entity_id) {
-    unsigned int idx = hashStr(entity_id);
-    for (struct User *p = h->byEntity[idx]; p; p = p->hnext_entity)
-        if (strcmp(p->entity_id, entity_id) == 0) return p;
-    return NULL;
-}
-
-/* ════════════════════════════════════════════════════════════════
-   BST OPERATIONS  (manager display only — sort by mentee roll)
-   ════════════════════════════════════════════════════════════════ */
-
-static inline struct BstNode *bstInsert(struct BstNode *root, struct Mentee *m) {
-    if (!root) {
-        struct BstNode *n = (struct BstNode *)malloc(sizeof(struct BstNode));
-        n->m = m; n->left = n->right = NULL;
-        return n;
+void meetingFree(struct Meeting *head) {
+    while (head != NULL) {
+        struct Meeting *tmp = head;
+        head = head->next;
+        free(tmp);
     }
-    if (strcmp(m->roll, root->m->roll) < 0) root->left  = bstInsert(root->left,  m);
-    else                                    root->right = bstInsert(root->right, m);
+}
+
+
+/* =============================================================
+   LINKED LIST HELPERS — Notes
+============================================================= */
+
+void noteAppend(struct Note **head, struct Note **tail, struct Note *n) {
+    n->next = NULL;
+    if (*head == NULL) {
+        *head = n;
+        *tail = n;
+    } else {
+        (*tail)->next = n;
+        *tail = n;
+    }
+}
+
+void noteFree(struct Note *head) {
+    while (head != NULL) {
+        struct Note *tmp = head;
+        head = head->next;
+        free(tmp);
+    }
+}
+
+
+/* =============================================================
+   FILE LOADERS — build data structures from files
+============================================================= */
+
+/* Load users.txt into a User BST (key = username) */
+struct UserNode *loadUsers(void) {
+    struct UserNode *root = NULL;
+    FILE *fp = fopen(USERS_FILE, "r");
+    if (fp == NULL) return NULL;
+
+    char line[256];
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        line[strcspn(line, "\n")] = '\0';
+        if (strlen(line) == 0) continue;
+
+        struct User u;
+        char tmp[256];
+        strcpy(tmp, line);
+
+        char *t;
+        t = strtok(tmp, ","); if (!t) continue; u.id = atoi(t);
+        t = strtok(NULL, ","); if (!t) continue; copyField(u.username,  t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) continue; copyField(u.password,  t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) continue; copyField(u.role,      t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) continue; copyField(u.entity_id, t, MAX_LEN);
+
+        root = userBstInsert(root, u);
+    }
+    fclose(fp);
     return root;
 }
 
-/* Caller supplies a visit() callback for each mentee in sorted order. */
-static inline void bstInorder(struct BstNode *root, void (*visit)(struct Mentee *)) {
-    if (!root) return;
-    bstInorder(root->left,  visit);
-    visit(root->m);
-    bstInorder(root->right, visit);
-}
-
-static inline void bstFree(struct BstNode *root) {
-    if (!root) return;
-    bstFree(root->left);
-    bstFree(root->right);
-    free(root);
-}
-
-/* ════════════════════════════════════════════════════════════════
-   LOAD-ONCE FILE READERS
-   (called from main() only — never from feature functions)
-   ════════════════════════════════════════════════════════════════ */
-
-/* users.txt   :  id,username,password,role,entity_id            */
-static inline struct User *loadUsersList(void) {
-    FILE *fp = fopen(USERS_FILE, "r");
-    if (!fp) return NULL;
-    struct User *head = NULL, *tail = NULL;
-    char line[256];
-    while (fgets(line, sizeof(line), fp)) {
-        line[strcspn(line, "\n")] = '\0';
-        if (!strlen(line)) continue;
-        struct User *u = (struct User *)calloc(1, sizeof(struct User));
-        char *t;
-        t = strtok(line, ","); if (!t) { free(u); continue; } u->id = atoi(t);
-        t = strtok(NULL, ","); if (!t) { free(u); continue; } copyField(u->username,  t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(u); continue; } copyField(u->password,  t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(u); continue; } copyField(u->role,      t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(u); continue; } copyField(u->entity_id, t, MAX_LEN);
-        appendUser(&head, &tail, u);
-    }
-    fclose(fp);
-    return head;
-}
-
-/* mentees.txt :  roll,name,dept,cgpa,attendance,mentor_id        */
-static inline struct Mentee *loadMenteesList(void) {
+/* Load mentees.txt into a Mentee BST (key = roll) */
+struct MenteeNode *loadMentees(void) {
+    struct MenteeNode *root = NULL;
     FILE *fp = fopen(MENTEES_FILE, "r");
-    if (!fp) return NULL;
-    struct Mentee *head = NULL, *tail = NULL;
+    if (fp == NULL) return NULL;
+
     char line[512];
-    while (fgets(line, sizeof(line), fp)) {
+    while (fgets(line, sizeof(line), fp) != NULL) {
         line[strcspn(line, "\n")] = '\0';
-        if (!strlen(line)) continue;
-        struct Mentee *m = (struct Mentee *)calloc(1, sizeof(struct Mentee));
+        if (strlen(line) == 0) continue;
+
+        struct Mentee m;
+        char tmp[512];
+        strcpy(tmp, line);
+
         char *t;
-        t = strtok(line, ","); if (!t) { free(m); continue; } copyField(m->roll,       t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(m); continue; } copyField(m->name,       t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(m); continue; } copyField(m->dept,       t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(m); continue; } copyField(m->cgpa,       t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(m); continue; } copyField(m->attendance, t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(m); continue; } copyField(m->mentor_id,  t, MAX_LEN);
-        appendMentee(&head, &tail, m);
+        t = strtok(tmp, ","); if (!t) continue; copyField(m.roll,       t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) continue; copyField(m.name,       t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) continue; copyField(m.dept,       t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) continue; copyField(m.cgpa,       t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) continue; copyField(m.attendance, t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) continue; copyField(m.mentor_id,  t, MAX_LEN);
+
+        root = menteeBstInsert(root, m);
     }
     fclose(fp);
-    return head;
+    return root;
 }
 
-/* notes.txt   :  id,roll,mentor_id,note,date                     */
-static inline struct Note *loadNotesList(void) {
-    FILE *fp = fopen(NOTES_FILE, "r");
-    if (!fp) return NULL;
-    struct Note *head = NULL, *tail = NULL;
-    char line[512];
-    while (fgets(line, sizeof(line), fp)) {
-        line[strcspn(line, "\n")] = '\0';
-        if (!strlen(line)) continue;
-        struct Note *n = (struct Note *)calloc(1, sizeof(struct Note));
-        char *t;
-        t = strtok(line, ","); if (!t) { free(n); continue; } n->id = atoi(t);
-        t = strtok(NULL, ","); if (!t) { free(n); continue; } copyField(n->roll,      t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(n); continue; } copyField(n->mentor_id, t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(n); continue; } copyField(n->note,      t, MAX_NOTE_LEN);
-        t = strtok(NULL, ",");
-        if (t) copyField(n->date, t, MAX_LEN);
-        appendNote(&head, &tail, n);
-    }
-    fclose(fp);
-    return head;
-}
-
-/* requests.txt:  id,roll,mentor_id,date,time,mode,purpose,status — into queue */
-static inline void loadRequestsQueue(struct RequestQueue *q) {
-    queueInit(q);
-    FILE *fp = fopen(REQUESTS_FILE, "r");
-    if (!fp) return;
-    char line[512];
-    while (fgets(line, sizeof(line), fp)) {
-        line[strcspn(line, "\n")] = '\0';
-        if (!strlen(line)) continue;
-        struct Request *r = (struct Request *)calloc(1, sizeof(struct Request));
-        char *t;
-        t = strtok(line, ","); if (!t) { free(r); continue; } r->id = atoi(t);
-        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->roll,      t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->mentor_id, t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->date,      t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->time,      t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->mode,      t, MAX_LEN);
-        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->purpose,   t, MAX_NOTE_LEN);
-        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->status,    t, MAX_LEN);
-        enqueueRequest(q, r);
-    }
-    fclose(fp);
-}
-
-/* meetings.txt:  id,roll,mentor_id,date,time,mode,agenda,status  */
-static inline struct Meeting *loadMeetingsList(void) {
+/* Load meetings.txt into a linked list */
+struct Meeting *loadMeetings(struct Meeting **tail_out) {
+    struct Meeting *head = NULL;
+    struct Meeting *tail = NULL;
     FILE *fp = fopen(MEETINGS_FILE, "r");
-    if (!fp) return NULL;
-    struct Meeting *head = NULL, *tail = NULL;
+    if (fp == NULL) { if (tail_out) *tail_out = NULL; return NULL; }
+
     char line[512];
-    while (fgets(line, sizeof(line), fp)) {
+    while (fgets(line, sizeof(line), fp) != NULL) {
         line[strcspn(line, "\n")] = '\0';
-        if (!strlen(line)) continue;
-        struct Meeting *mt = (struct Meeting *)calloc(1, sizeof(struct Meeting));
+        if (strlen(line) == 0) continue;
+
+        struct Meeting *mt = calloc(1, sizeof(struct Meeting));
+        char tmp[512];
+        strcpy(tmp, line);
+
         char *t;
-        t = strtok(line, ","); if (!t) { free(mt); continue; } mt->id = atoi(t);
+        t = strtok(tmp, ","); if (!t) { free(mt); continue; } mt->id = atoi(t);
         t = strtok(NULL, ","); if (!t) { free(mt); continue; } copyField(mt->roll,      t, MAX_LEN);
         t = strtok(NULL, ","); if (!t) { free(mt); continue; } copyField(mt->mentor_id, t, MAX_LEN);
         t = strtok(NULL, ","); if (!t) { free(mt); continue; } copyField(mt->date,      t, MAX_LEN);
@@ -376,67 +473,130 @@ static inline struct Meeting *loadMeetingsList(void) {
         t = strtok(NULL, ","); if (!t) { free(mt); continue; } copyField(mt->mode,      t, MAX_LEN);
         t = strtok(NULL, ","); if (!t) { free(mt); continue; } copyField(mt->agenda,    t, MAX_NOTE_LEN);
         t = strtok(NULL, ","); if (!t) { free(mt); continue; } copyField(mt->status,    t, MAX_LEN);
-        appendMeeting(&head, &tail, mt);
+
+        meetingAppend(&head, &tail, mt);
     }
     fclose(fp);
+    if (tail_out) *tail_out = tail;
     return head;
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SAVE-ONCE FILE WRITERS  (called from main() only)
-   ════════════════════════════════════════════════════════════════ */
+/* Load requests.txt into a queue (FIFO) */
+void loadRequests(struct RequestQueue *q) {
+    queueInit(q);
+    FILE *fp = fopen(REQUESTS_FILE, "r");
+    if (fp == NULL) return;
 
-static inline void saveMenteesList(struct Mentee *head) {
-    FILE *fp = fopen(MENTEES_FILE, "w");
-    if (!fp) return;
-    for (struct Mentee *m = head; m; m = m->next)
-        fprintf(fp, "%s,%s,%s,%s,%s,%s\n",
-            m->roll, m->name, m->dept, m->cgpa, m->attendance, m->mentor_id);
+    char line[512];
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        line[strcspn(line, "\n")] = '\0';
+        if (strlen(line) == 0) continue;
+
+        struct Request *r = calloc(1, sizeof(struct Request));
+        char tmp[512];
+        strcpy(tmp, line);
+
+        char *t;
+        t = strtok(tmp, ","); if (!t) { free(r); continue; } r->id = atoi(t);
+        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->roll,      t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->mentor_id, t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->date,      t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->time,      t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->mode,      t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->purpose,   t, MAX_NOTE_LEN);
+        t = strtok(NULL, ","); if (!t) { free(r); continue; } copyField(r->status,    t, MAX_LEN);
+
+        queueEnqueue(q, r);
+    }
     fclose(fp);
 }
 
-static inline void saveNotesList(struct Note *head) {
-    FILE *fp = fopen(NOTES_FILE, "w");
-    if (!fp) return;
-    for (struct Note *n = head; n; n = n->next)
-        fprintf(fp, "%d,%s,%s,%s,%s\n",
-            n->id, n->roll, n->mentor_id, n->note, n->date);
+/* Load notes.txt into a linked list */
+struct Note *loadNotes(struct Note **tail_out) {
+    struct Note *head = NULL;
+    struct Note *tail = NULL;
+    FILE *fp = fopen(NOTES_FILE, "r");
+    if (fp == NULL) { if (tail_out) *tail_out = NULL; return NULL; }
+
+    char line[512];
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        line[strcspn(line, "\n")] = '\0';
+        if (strlen(line) == 0) continue;
+
+        struct Note *n = calloc(1, sizeof(struct Note));
+        char tmp[512];
+        strcpy(tmp, line);
+
+        char *t;
+        t = strtok(tmp, ","); if (!t) { free(n); continue; } n->id = atoi(t);
+        t = strtok(NULL, ","); if (!t) { free(n); continue; } copyField(n->roll,      t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) { free(n); continue; } copyField(n->mentor_id, t, MAX_LEN);
+        t = strtok(NULL, ","); if (!t) { free(n); continue; } copyField(n->note,      t, MAX_NOTE_LEN);
+        t = strtok(NULL, ","); if (t)  copyField(n->date, t, MAX_LEN);
+
+        noteAppend(&head, &tail, n);
+    }
     fclose(fp);
+    if (tail_out) *tail_out = tail;
+    return head;
 }
 
-static inline void saveRequestsQueue(struct RequestQueue *q) {
-    FILE *fp = fopen(REQUESTS_FILE, "w");
-    if (!fp) return;
-    for (struct Request *r = q->head; r; r = r->next)
-        fprintf(fp, "%d,%s,%s,%s,%s,%s,%s,%s\n",
-            r->id, r->roll, r->mentor_id, r->date,
-            r->time, r->mode, r->purpose, r->status);
-    fclose(fp);
-}
 
-static inline void saveMeetingsList(struct Meeting *head) {
+/* =============================================================
+   FILE SAVERS
+============================================================= */
+
+void saveMeetings(struct Meeting *head) {
     FILE *fp = fopen(MEETINGS_FILE, "w");
-    if (!fp) return;
-    for (struct Meeting *m = head; m; m = m->next)
+    if (fp == NULL) return;
+    for (struct Meeting *m = head; m != NULL; m = m->next) {
         fprintf(fp, "%d,%s,%s,%s,%s,%s,%s,%s\n",
-            m->id, m->roll, m->mentor_id, m->date,
-            m->time, m->mode, m->agenda, m->status);
+                m->id, m->roll, m->mentor_id, m->date,
+                m->time, m->mode, m->agenda, m->status);
+    }
     fclose(fp);
 }
 
-/* ── Build hash tables from already-loaded lists ─────────────── */
-
-static inline void buildMenteeHash(struct MenteeHash *h, struct Mentee *list) {
-    menteeHashInit(h);
-    for (struct Mentee *m = list; m; m = m->next) menteeHashInsert(h, m);
+void saveRequests(struct RequestQueue *q) {
+    FILE *fp = fopen(REQUESTS_FILE, "w");
+    if (fp == NULL) return;
+    for (struct Request *r = q->head; r != NULL; r = r->next) {
+        fprintf(fp, "%d,%s,%s,%s,%s,%s,%s,%s\n",
+                r->id, r->roll, r->mentor_id, r->date,
+                r->time, r->mode, r->purpose, r->status);
+    }
+    fclose(fp);
 }
-static inline void buildUserHash(struct UserHash *h, struct User *list) {
-    userHashInit(h);
-    for (struct User *u = list; u; u = u->next) userHashInsert(h, u);
+
+void saveNotes(struct Note *head) {
+    FILE *fp = fopen(NOTES_FILE, "w");
+    if (fp == NULL) return;
+    for (struct Note *n = head; n != NULL; n = n->next) {
+        fprintf(fp, "%d,%s,%s,%s,%s\n",
+                n->id, n->roll, n->mentor_id, n->note, n->date);
+    }
+    fclose(fp);
 }
 
-/* ── Counting helpers (no file IO) ───────────────────────────── */
-static inline int countMentees(struct Mentee *head)   { int n=0; for (; head; head=head->next) n++; return n; }
-static inline int countMeetings(struct Meeting *head) { int n=0; for (; head; head=head->next) n++; return n; }
+
+/* =============================================================
+   COUNT HELPERS
+============================================================= */
+
+int countMeetings(struct Meeting *head) {
+    int n = 0;
+    for (struct Meeting *m = head; m != NULL; m = m->next) n++;
+    return n;
+}
+
+/* Count mentees in BST via inorder traversal counter */
+static int _menteeCount = 0;
+void _countVisitor(struct Mentee *m) { (void)m; _menteeCount++; }
+
+int countMentees(struct MenteeNode *root) {
+    _menteeCount = 0;
+    menteeBstInorder(root, _countVisitor);
+    return _menteeCount;
+}
 
 #endif /* STRUCTURES_H */

@@ -1,48 +1,59 @@
 /*
- * mentee.c  —  Mentee Module  (REFACTORED)
- * All operations work on in-memory linked lists / queue / hash tables.
- * Files are read once at the top of main() and saved once at the end.
+ * mentee.c — Mentee Module
+ * SSN College of Engineering, Dept. of IT
  *
- * Usage (run from c_backend/):
+ * Usage (from c_backend/):
  *   ./mentee view_profile    <roll>
  *   ./mentee request_meeting <roll> <mentor_id> <date> <time> <mode> <purpose>
  *   ./mentee view_meetings   <roll>
  *   ./mentee view_requests   <roll>
+ *
+ * Data structures:
+ *   User BST   — key = username, also searched by entity_id for mentor name
+ *   Mentee BST — key = roll, for profile lookup
+ *   Meeting LL — filter by roll
+ *   Request Q  — enqueue new requests, view by roll
  */
 
 #include "structures.h"
 
-/* ── view profile ─────────────────────────────────────────────── */
-static void viewProfile(struct MenteeHash *mh, struct UserHash *uh, const char *roll) {
-    struct Mentee *m = menteeHashFind(mh, roll);
-    if (!m) { printf("NOT_FOUND:%s\n", roll); return; }
 
-    const char *mentor_name = "-";
-    struct User *u = userHashFindByEntity(uh, m->mentor_id);
-    if (u && strcmp(u->role, "mentor") == 0) mentor_name = u->username;
+void viewProfile(struct MenteeNode *menteeRoot, struct UserNode *userRoot,
+                 const char *roll) {
+
+    struct MenteeNode *mn = menteeBstSearch(menteeRoot, roll);
+    if (mn == NULL) { printf("NOT_FOUND:%s\n", roll); return; }
+
+    /* Find mentor name by entity_id in User BST */
+    struct UserNode *un = userBstSearchByEntity(userRoot, mn->data.mentor_id);
+    const char *mentor_name = (un != NULL) ? un->data.username : "-";
 
     printf("PROFILE:%s,%s,%s,%s,%s,%s,%s\n",
-        m->roll, m->name, m->dept, m->cgpa, m->attendance,
-        m->mentor_id, mentor_name);
+           mn->data.roll, mn->data.name, mn->data.dept,
+           mn->data.cgpa, mn->data.attendance,
+           mn->data.mentor_id, mentor_name);
 }
 
-/* ── request meeting (enqueue) ───────────────────────────────── */
-static int requestMeeting(struct RequestQueue *q, struct UserHash *uh,
-                          const char *roll, const char *mentor_id,
-                          const char *date, const char *time_str,
-                          const char *mode, const char *purpose) {
-    /* Validate mentor via hash lookup */
-    struct User *u = userHashFindByEntity(uh, mentor_id);
-    if (!u || strcmp(u->role, "mentor") != 0) {
-        printf("ERROR:unknown_mentor\n"); return 0;
+
+int requestMeeting(struct RequestQueue *q, struct UserNode *userRoot,
+                   const char *roll, const char *mentor_id,
+                   const char *date, const char *time_str,
+                   const char *mode, const char *purpose) {
+
+    /* Validate mentor exists via BST entity search */
+    struct UserNode *un = userBstSearchByEntity(userRoot, mentor_id);
+    if (un == NULL || strcmp(un->data.role, "mentor") != 0) {
+        printf("ERROR:unknown_mentor\n");
+        return 0;
     }
 
-    /* Find next id by walking the queue (small N; cheap) */
+    /* Find max id */
     int maxId = 0;
-    for (struct Request *r = q->head; r; r = r->next)
+    for (struct Request *r = q->head; r != NULL; r = r->next) {
         if (r->id > maxId) maxId = r->id;
+    }
 
-    struct Request *r = (struct Request *)calloc(1, sizeof(struct Request));
+    struct Request *r = calloc(1, sizeof(struct Request));
     r->id = maxId + 1;
     copyField(r->roll,      roll,      MAX_LEN);
     copyField(r->mentor_id, mentor_id, MAX_LEN);
@@ -52,63 +63,78 @@ static int requestMeeting(struct RequestQueue *q, struct UserHash *uh,
     copyField(r->purpose,   purpose,   MAX_NOTE_LEN);
     strcpy(r->status, "pending");
 
-    enqueueRequest(q, r);          /* FIFO queue insert */
+    queueEnqueue(q, r);
     printf("SUCCESS:request_sent\n");
-    return 1;                      /* changed → save needed */
+    return 1;
 }
 
-/* ── view meetings of a mentee ───────────────────────────────── */
-static void viewMyMeetings(struct Meeting *list, const char *roll) {
+
+void viewMyMeetings(struct Meeting *head, const char *roll) {
     int found = 0;
-    for (struct Meeting *m = list; m; m = m->next) {
-        if (strcmp(m->roll, roll) == 0) {
-            printf("MEETING:%d,%s,%s,%s,%s,%s,%s\n",
-                m->id, m->date, m->time, m->mentor_id, m->mode,
-                m->agenda, m->status);
-            found = 1;
-        }
+    for (struct Meeting *m = head; m != NULL; m = m->next) {
+        if (strcmp(m->roll, roll) != 0) continue;
+        printf("MEETING:%d,%s,%s,%s,%s,%s,%s\n",
+               m->id, m->date, m->time, m->mentor_id,
+               m->mode, m->agenda, m->status);
+        found = 1;
     }
     if (!found) printf("EMPTY:no_meetings\n");
 }
 
-/* ── view this mentee's requests ─────────────────────────────── */
-static void viewMyRequests(struct RequestQueue *q, const char *roll) {
+
+void viewMyRequests(struct RequestQueue *q, const char *roll) {
     int found = 0;
-    for (struct Request *r = q->head; r; r = r->next) {
-        if (strcmp(r->roll, roll) == 0) {
-            printf("REQUEST:%d,%s,%s,%s,%s,%s\n",
-                r->id, r->date, r->time, r->mode, r->purpose, r->status);
-            found = 1;
-        }
+    for (struct Request *r = q->head; r != NULL; r = r->next) {
+        if (strcmp(r->roll, roll) != 0) continue;
+        printf("REQUEST:%d,%s,%s,%s,%s,%s\n",
+               r->id, r->date, r->time, r->mode, r->purpose, r->status);
+        found = 1;
     }
     if (!found) printf("EMPTY:no_requests\n");
 }
 
-/* ── main: load once, dispatch, save once ────────────────────── */
+
 int main(int argc, char *argv[]) {
     if (argc < 2) { printf("ERROR:no_command\n"); return 1; }
     char *cmd = argv[1];
 
-    /* LOAD ONCE */
-    struct User    *users    = loadUsersList();
-    struct Mentee  *mentees  = loadMenteesList();
-    struct Meeting *meetings = loadMeetingsList();
-    struct RequestQueue requests; loadRequestsQueue(&requests);
-
-    /* BUILD HASH TABLES */
-    struct UserHash   uh; buildUserHash(&uh, users);
-    struct MenteeHash mh; buildMenteeHash(&mh, mentees);
+    /* Load */
+    struct UserNode     *users    = loadUsers();
+    struct MenteeNode   *mentees  = loadMentees();
+    struct Meeting      *meetings = loadMeetings(NULL);
+    struct RequestQueue  requests;
+    loadRequests(&requests);
 
     int requestsChanged = 0;
 
-    /* DISPATCH (in-memory only) */
-    if      (strcmp(cmd, "view_profile")    == 0 && argc >= 3) viewProfile(&mh, &uh, argv[2]);
-    else if (strcmp(cmd, "request_meeting") == 0 && argc >= 8) requestsChanged = requestMeeting(&requests, &uh, argv[2], argv[3], argv[4], argv[5], argv[6], argv[7]);
-    else if (strcmp(cmd, "view_meetings")   == 0 && argc >= 3) viewMyMeetings(meetings, argv[2]);
-    else if (strcmp(cmd, "view_requests")   == 0 && argc >= 3) viewMyRequests(&requests, argv[2]);
-    else { printf("ERROR:unknown_or_bad_args:%s\n", cmd); return 2; }
+    /* Dispatch */
+    if (strcmp(cmd, "view_profile") == 0 && argc >= 3) {
+        viewProfile(mentees, users, argv[2]);
 
-    /* SAVE ONCE (only what was actually modified) */
-    if (requestsChanged) saveRequestsQueue(&requests);
+    } else if (strcmp(cmd, "request_meeting") == 0 && argc >= 8) {
+        requestsChanged = requestMeeting(&requests, users,
+                                         argv[2], argv[3], argv[4],
+                                         argv[5], argv[6], argv[7]);
+
+    } else if (strcmp(cmd, "view_meetings") == 0 && argc >= 3) {
+        viewMyMeetings(meetings, argv[2]);
+
+    } else if (strcmp(cmd, "view_requests") == 0 && argc >= 3) {
+        viewMyRequests(&requests, argv[2]);
+
+    } else {
+        printf("ERROR:unknown_or_bad_args:%s\n", cmd);
+        return 2;
+    }
+
+    /* Save only if changed */
+    if (requestsChanged) saveRequests(&requests);
+
+    /* Free */
+    userBstFree(users);
+    menteeBstFree(mentees);
+    meetingFree(meetings);
+    queueFree(&requests);
+
     return 0;
 }
