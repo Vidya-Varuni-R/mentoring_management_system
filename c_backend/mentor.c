@@ -35,15 +35,17 @@ void viewMentees(struct MenteeNode *root, const char *mentor_id) {
     if (root == NULL) return;
     viewMentees(root->left, mentor_id);
     if (strcmp(root->data.mentor_id, mentor_id) == 0) {
-        printf("DATA:%s,%s,%s,%s,%s\n",
+        printf("DATA:%s,%s,%s,%s,%s,%s,%s\n",
                root->data.roll, root->data.name, root->data.dept,
-               root->data.cgpa, root->data.attendance);
+               root->data.cgpa, root->data.attendance,
+               root->data.cat1, root->data.cat2);
     }
     viewMentees(root->right, mentor_id);
 }
 
 int addMentee(struct MenteeNode **root, const char *mentor_id,
               const char *name, const char *dept, const char *roll,
+              const char *cat1, const char *cat2,
               const char *cgpa, const char *attendance) {
 
     if (menteeBstSearch(*root, roll) != NULL) {
@@ -55,6 +57,8 @@ int addMentee(struct MenteeNode **root, const char *mentor_id,
     copyField(m.roll,       roll,       MAX_LEN);
     copyField(m.name,       name,       MAX_LEN);
     copyField(m.dept,       dept,       MAX_LEN);
+    copyField(m.cat1,       cat1,       MAX_LEN);
+    copyField(m.cat2,       cat2,       MAX_LEN);
     copyField(m.cgpa,       cgpa,       MAX_LEN);
     copyField(m.attendance, attendance, MAX_LEN);
     copyField(m.mentor_id,  mentor_id,  MAX_LEN);
@@ -70,13 +74,15 @@ void searchMentee(struct MenteeNode *root, const char *roll) {
         printf("NOT_FOUND:%s\n", roll);
         return;
     }
-    printf("FOUND:%s,%s,%s,%s,%s,%s\n",
+    printf("FOUND:%s,%s,%s,%s,%s,%s,%s,%s\n",
            found->data.roll,  found->data.name, found->data.dept,
-           found->data.cgpa,  found->data.attendance, found->data.mentor_id);
+           found->data.cgpa,  found->data.attendance, found->data.mentor_id,
+           found->data.cat1,  found->data.cat2);
 }
 
 int updateMentee(struct MenteeNode *root, const char *roll,
                  const char *name, const char *dept,
+                 const char *cat1, const char *cat2,
                  const char *cgpa, const char *attendance) {
 
     struct MenteeNode *found = menteeBstSearch(root, roll);
@@ -88,6 +94,8 @@ int updateMentee(struct MenteeNode *root, const char *roll,
     /* Update fields directly in the BST node */
     copyField(found->data.name,       name,       MAX_LEN);
     copyField(found->data.dept,       dept,       MAX_LEN);
+    copyField(found->data.cat1,       cat1,       MAX_LEN);
+    copyField(found->data.cat2,       cat2,       MAX_LEN);
     copyField(found->data.cgpa,       cgpa,       MAX_LEN);
     copyField(found->data.attendance, attendance, MAX_LEN);
 
@@ -172,7 +180,7 @@ void viewRequests(struct RequestQueue *q, struct MenteeNode *menteeRoot,
 }
 
 void respondRequest(struct RequestQueue *q,
-                    struct Meeting **mhead, struct Meeting **mtail,
+                    struct MeetingStack *s,
                     const char *req_id_str, const char *response,
                     int *reqChanged, int *meetChanged) {
 
@@ -199,7 +207,7 @@ void respondRequest(struct RequestQueue *q,
     if (strcmp(response, "accepted") == 0) {
         /* Create a confirmed meeting from the request */
         int maxId = 0;
-        for (struct Meeting *m = *mhead; m != NULL; m = m->next) {
+        for (struct Meeting *m = s->top; m != NULL; m = m->next) {
             if (m->id > maxId) maxId = m->id;
         }
 
@@ -213,7 +221,7 @@ void respondRequest(struct RequestQueue *q,
         copyField(nm->agenda,    target->purpose,   MAX_NOTE_LEN);
         strcpy(nm->status, "confirmed");
 
-        meetingAppend(mhead, mtail, nm);
+        stackPush(s, nm);
         *meetChanged = 1;
         printf("SUCCESS:request_accepted\n");
     } else {
@@ -223,13 +231,13 @@ void respondRequest(struct RequestQueue *q,
 
 
 /* =============================================================
-   MEETING OPERATIONS (Linked List)
+   MEETING OPERATIONS (Stack)
 ============================================================= */
 
-void viewMeetings(struct Meeting *head, struct MenteeNode *menteeRoot,
+void viewMeetings(struct MeetingStack *s, struct MenteeNode *menteeRoot,
                   const char *mentor_id) {
     int found = 0;
-    for (struct Meeting *m = head; m != NULL; m = m->next) {
+    for (struct Meeting *m = s->top; m != NULL; m = m->next) {
         if (strcmp(m->mentor_id, mentor_id) != 0) continue;
 
         struct MenteeNode *mn = menteeBstSearch(menteeRoot, m->roll);
@@ -243,7 +251,7 @@ void viewMeetings(struct Meeting *head, struct MenteeNode *menteeRoot,
     if (!found) printf("EMPTY:no_meetings\n");
 }
 
-int scheduleMeeting(struct Meeting **mhead, struct Meeting **mtail,
+int scheduleMeeting(struct MeetingStack *s,
                     struct MenteeNode *menteeRoot,
                     const char *mentor_id, const char *roll,
                     const char *date, const char *time_str,
@@ -256,7 +264,7 @@ int scheduleMeeting(struct Meeting **mhead, struct Meeting **mtail,
     }
 
     int maxId = 0;
-    for (struct Meeting *m = *mhead; m != NULL; m = m->next) {
+    for (struct Meeting *m = s->top; m != NULL; m = m->next) {
         if (m->id > maxId) maxId = m->id;
     }
 
@@ -270,9 +278,29 @@ int scheduleMeeting(struct Meeting **mhead, struct Meeting **mtail,
     copyField(nm->agenda,    agenda,    MAX_NOTE_LEN);
     strcpy(nm->status, "confirmed");
 
-    meetingAppend(mhead, mtail, nm);
+    stackPush(s, nm);
     printf("SUCCESS:meeting_scheduled\n");
     return 1;
+}
+
+int completeMeeting(struct MeetingStack *s, const char *mentor_id, int meeting_id) {
+    for (struct Meeting *m = s->top; m != NULL; m = m->next) {
+        if (m->id == meeting_id) {
+            if (strcmp(m->mentor_id, mentor_id) != 0) {
+                printf("ERROR:not_your_meeting\n");
+                return 0;
+            }
+            if (strcmp(m->status, "completed") == 0) {
+                printf("ERROR:already_completed\n");
+                return 0;
+            }
+            strcpy(m->status, "completed");
+            printf("SUCCESS:meeting_completed\n");
+            return 1;
+        }
+    }
+    printf("ERROR:meeting_not_found\n");
+    return 0;
 }
 
 
@@ -288,12 +316,11 @@ int main(int argc, char *argv[]) {
     struct MenteeNode   *mentees  = loadMentees();
     struct Note         *notes    = NULL;
     struct Note         *noteTail = NULL;
-    struct Meeting      *meetings = NULL;
-    struct Meeting      *meetTail = NULL;
+    struct MeetingStack  meetings;
     struct RequestQueue  requests;
 
-    notes    = loadNotes(&noteTail);
-    meetings = loadMeetings(&meetTail);
+    notes = loadNotes(&noteTail);
+    loadMeetings(&meetings);
     loadRequests(&requests);
 
     int menteesChanged  = 0;
@@ -310,16 +337,16 @@ int main(int argc, char *argv[]) {
         (void)printed;
         if (mentees == NULL) printf("EMPTY:no_mentees\n");
 
-    } else if (strcmp(cmd, "add_mentee") == 0 && argc >= 8) {
+    } else if (strcmp(cmd, "add_mentee") == 0 && argc >= 10) {
         menteesChanged = addMentee(&mentees, argv[2], argv[3], argv[4],
-                                   argv[5], argv[6], argv[7]);
+                                   argv[5], argv[6], argv[7], argv[8], argv[9]);
 
     } else if (strcmp(cmd, "search_mentee") == 0 && argc >= 3) {
         searchMentee(mentees, argv[2]);
 
-    } else if (strcmp(cmd, "update_mentee") == 0 && argc >= 7) {
-        menteesChanged = updateMentee(mentees, argv[2], argv[3],
-                                      argv[4], argv[5], argv[6]);
+    } else if (strcmp(cmd, "update_mentee") == 0 && argc >= 9) {
+        menteesChanged = updateMentee(mentees, argv[2], argv[3], argv[4],
+                                      argv[5], argv[6], argv[7], argv[8]);
 
     } else if (strcmp(cmd, "delete_mentee") == 0 && argc >= 3) {
         menteesChanged = deleteMentee(&mentees, argv[2]);
@@ -334,16 +361,20 @@ int main(int argc, char *argv[]) {
         viewRequests(&requests, mentees, argv[2]);
 
     } else if (strcmp(cmd, "respond_request") == 0 && argc >= 4) {
-        respondRequest(&requests, &meetings, &meetTail,
+        respondRequest(&requests, &meetings,
                        argv[2], argv[3], &requestsChanged, &meetingsChanged);
 
     } else if (strcmp(cmd, "view_meetings") == 0 && argc >= 3) {
-        viewMeetings(meetings, mentees, argv[2]);
+        viewMeetings(&meetings, mentees, argv[2]);
 
     } else if (strcmp(cmd, "schedule_meeting") == 0 && argc >= 8) {
-        meetingsChanged = scheduleMeeting(&meetings, &meetTail, mentees,
+        meetingsChanged = scheduleMeeting(&meetings, mentees,
                                           argv[2], argv[3], argv[4],
                                           argv[5], argv[6], argv[7]);
+
+    } else if (strcmp(cmd, "complete_meeting") == 0 && argc >= 4) {
+        meetingsChanged = completeMeeting(&meetings, argv[2], atoi(argv[3]));
+
     } else {
         printf("ERROR:unknown_or_bad_args:%s\n", cmd);
         return 2;
@@ -353,12 +384,12 @@ int main(int argc, char *argv[]) {
     if (menteesChanged)  menteeBstSave(mentees);
     if (notesChanged)    saveNotes(notes);
     if (requestsChanged) saveRequests(&requests);
-    if (meetingsChanged) saveMeetings(meetings);
+    if (meetingsChanged) saveMeetings(&meetings);
 
     /* Free */
     menteeBstFree(mentees);
     noteFree(notes);
-    meetingFree(meetings);
+    stackFree(&meetings);
     queueFree(&requests);
 
     return 0;

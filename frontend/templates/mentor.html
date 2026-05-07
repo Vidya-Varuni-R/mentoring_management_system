@@ -147,7 +147,7 @@
                 <thead>
                   <tr>
                     <th>Roll No.</th><th>Name</th><th>Dept</th>
-                    <th>CGPA</th><th>Attendance</th><th>Actions</th>
+                    <th>CAT1</th><th>CAT2</th><th>CGPA</th><th>Attendance</th><th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -156,6 +156,14 @@
                     <td><span class="roll-pill">{{ m.roll }}</span></td>
                     <td style="font-weight:600">{{ m.name }}</td>
                     <td>{{ m.dept }}</td>
+                    <td>
+                      {% set cat1 = m.cat1|float %}
+                      <span class="badge {% if cat1 >= 25 %}badge-green{% else %}badge-red{% endif %}">{{ m.cat1 }}</span>
+                    </td>
+                    <td>
+                      {% set cat2 = m.cat2|float %}
+                      <span class="badge {% if cat2 >= 25 %}badge-green{% else %}badge-red{% endif %}">{{ m.cat2 }}</span>
+                    </td>
                     <td>
                       {% set cgpa = m.cgpa|float %}
                       <span class="badge {% if cgpa >= 8 %}badge-green{% elif cgpa >= 7 %}badge-gold{% else %}badge-red{% endif %}">{{ m.cgpa }}</span>
@@ -166,7 +174,7 @@
                     </td>
                     <td>
                       <div style="display:flex;gap:6px">
-                        <button class="btn btn-secondary btn-xs" onclick="openEdit('{{ m.roll }}','{{ m.name }}','{{ m.dept }}','{{ m.cgpa }}','{{ m.attendance }}')">Edit</button>
+                        <button class="btn btn-secondary btn-xs" onclick="openEdit('{{ m.roll }}','{{ m.name }}','{{ m.dept }}','{{ m.cat1 }}','{{ m.cat2 }}','{{ m.cgpa }}','{{ m.attendance }}')">Edit</button>
                         <form method="POST" action="/mentor/delete" style="display:inline" onsubmit="return confirm('Remove {{ m.name }}?')">
                           <input type="hidden" name="roll" value="{{ m.roll }}"/>
                           <button type="submit" class="btn btn-danger btn-xs">Delete</button>
@@ -286,7 +294,17 @@
                     <td>{{ m.time }}</td>
                     <td><span class="badge badge-muted">{{ m.mode }}</span></td>
                     <td>{{ m.agenda }}</td>
-                    <td><span class="badge {{ m.status_class }}">{{ m.status }}</span></td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:6px">
+                        <span class="badge {{ m.status_class }}">{{ m.status }}</span>
+                        {% if m.status == "confirmed" %}
+                        <form method="POST" action="/mentor/complete-meeting" style="display:inline">
+                          <input type="hidden" name="meeting_id" value="{{ m.id }}"/>
+                          <button type="submit" class="btn btn-primary btn-xs" style="padding: 2px 6px; font-size: 0.65rem;">✓ Complete</button>
+                        </form>
+                        {% endif %}
+                      </div>
+                    </td>
                   </tr>
                   {% endfor %}
                 </tbody>
@@ -385,6 +403,8 @@
                   <div><p style="font-size:0.72rem;color:var(--muted);font-weight:600;margin-bottom:3px">ROLL NO.</p><p class="roll-pill">{{ search_result.roll }}</p></div>
                   <div><p style="font-size:0.72rem;color:var(--muted);font-weight:600;margin-bottom:3px">NAME</p><p style="font-weight:600">{{ search_result.name }}</p></div>
                   <div><p style="font-size:0.72rem;color:var(--muted);font-weight:600;margin-bottom:3px">DEPT</p><p>{{ search_result.dept }}</p></div>
+                  <div><p style="font-size:0.72rem;color:var(--muted);font-weight:600;margin-bottom:3px">CAT1</p><span class="badge {% if search_result.cat1|float >= 25 %}badge-green{% else %}badge-red{% endif %}">{{ search_result.cat1 }}</span></div>
+                  <div><p style="font-size:0.72rem;color:var(--muted);font-weight:600;margin-bottom:3px">CAT2</p><span class="badge {% if search_result.cat2|float >= 25 %}badge-green{% else %}badge-red{% endif %}">{{ search_result.cat2 }}</span></div>
                   <div><p style="font-size:0.72rem;color:var(--muted);font-weight:600;margin-bottom:3px">CGPA</p><span class="badge {% if search_result.cgpa|float >= 8 %}badge-green{% elif search_result.cgpa|float >= 7 %}badge-gold{% else %}badge-red{% endif %}">{{ search_result.cgpa }}</span></div>
                   <div><p style="font-size:0.72rem;color:var(--muted);font-weight:600;margin-bottom:3px">ATTENDANCE</p><span class="badge {% if search_result.attendance|float >= 85 %}badge-green{% elif search_result.attendance|float >= 75 %}badge-gold{% else %}badge-red{% endif %}">{{ search_result.attendance }}%</span></div>
                 </div>
@@ -415,8 +435,12 @@
             <div class="field"><label>Roll Number *</label><input type="text" name="roll" placeholder="3122255002xxx" required/></div>
             <div class="field"><label>Full Name *</label><input type="text" name="name" placeholder="Student name" required/></div>
           </div>
-          <div class="form-row-3">
+          <div class="form-row">
             <div class="field"><label>Department *</label><input type="text" name="dept" placeholder="IT" required/></div>
+            <div class="field"><label>CAT1 *</label><input type="number" name="cat1" placeholder="45" min="0" max="50" required/></div>
+            <div class="field"><label>CAT2 *</label><input type="number" name="cat2" placeholder="42" min="0" max="50" required/></div>
+          </div>
+          <div class="form-row">
             <div class="field"><label>CGPA *</label><input type="number" name="cgpa" placeholder="8.5" step="0.01" min="0" max="10" required/></div>
             <div class="field"><label>Attendance % *</label><input type="number" name="attendance" placeholder="85" min="0" max="100" required/></div>
           </div>
@@ -446,7 +470,11 @@
           </div>
           <div class="form-row">
             <div class="field"><label>Full Name</label><input type="text" name="name" id="edit-name" required/></div>
+          </div>
+          <div class="form-row">
             <div class="field"><label>Department</label><input type="text" name="dept" id="edit-dept" required/></div>
+            <div class="field"><label>CAT1</label><input type="number" name="cat1" id="edit-cat1" min="0" max="50" required/></div>
+            <div class="field"><label>CAT2</label><input type="number" name="cat2" id="edit-cat2" min="0" max="50" required/></div>
           </div>
           <div class="form-row">
             <div class="field"><label>CGPA</label><input type="number" name="cgpa" id="edit-cgpa" step="0.01" min="0" max="10" required/></div>
@@ -560,10 +588,12 @@
   });
 
   // ── Edit mentee pre-fill
-  function openEdit(roll, name, dept, cgpa, att) {
+  function openEdit(roll, name, dept, cat1, cat2, cgpa, att) {
     document.getElementById('edit-roll').value = roll;
     document.getElementById('edit-name').value = name;
     document.getElementById('edit-dept').value = dept;
+    document.getElementById('edit-cat1').value = cat1;
+    document.getElementById('edit-cat2').value = cat2;
     document.getElementById('edit-cgpa').value = cgpa;
     document.getElementById('edit-att').value  = att;
     openModal('editMenteeModal');

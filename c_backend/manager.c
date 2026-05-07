@@ -40,7 +40,7 @@ int countUsersWithRole(struct UserNode *root, const char *role) {
 }
 
 void summary(struct UserNode *users, struct MenteeNode *mentees,
-             struct Meeting *meetings) {
+             struct MeetingStack *meetings) {
     int mentor_count  = countUsersWithRole(users, "mentor");
     int mentee_count  = countMentees(mentees);
     int meeting_count = countMeetings(meetings);
@@ -58,7 +58,7 @@ void summary(struct UserNode *users, struct MenteeNode *mentees,
     while (cur != NULL || top > 0) {
         while (cur != NULL) { stack[top++] = cur; cur = cur->left; }
         cur = stack[--top];
-        if (atof(cur->data.attendance) < 75.0f || atof(cur->data.cgpa) < 7.0f) {
+        if (atof(cur->data.attendance) < 75.0f || atof(cur->data.cat1) < 25.0f || atof(cur->data.cat2) < 25.0f) {
             flagged++;
         }
         cur = cur->right;
@@ -76,7 +76,7 @@ void summary(struct UserNode *users, struct MenteeNode *mentees,
 /* We need access to mentees and meetings inside the visitor,
    so we use file-scope pointers (simple approach, no closures in C) */
 static struct MenteeNode *_mentorMenteeRoot   = NULL;
-static struct Meeting    *_mentorMeetingHead  = NULL;
+static struct MeetingStack *_mentorMeetingStack = NULL;
 
 void _listMentorVisitor(struct User *u) {
     if (strcmp(u->role, "mentor") != 0) return;
@@ -95,7 +95,7 @@ void _listMentorVisitor(struct User *u) {
         cur = cur->right;
     }
 
-    for (struct Meeting *m = _mentorMeetingHead; m != NULL; m = m->next) {
+    for (struct Meeting *m = _mentorMeetingStack->top; m != NULL; m = m->next) {
         if (strcmp(m->mentor_id, u->entity_id) == 0) meeting_count++;
     }
 
@@ -104,9 +104,9 @@ void _listMentorVisitor(struct User *u) {
 }
 
 void listMentors(struct UserNode *users, struct MenteeNode *mentees,
-                 struct Meeting *meetings) {
-    _mentorMenteeRoot  = mentees;
-    _mentorMeetingHead = meetings;
+                 struct MeetingStack *meetings) {
+    _mentorMenteeRoot   = mentees;
+    _mentorMeetingStack = meetings;
     userBstInorder(users, _listMentorVisitor);
 }
 
@@ -118,14 +118,16 @@ void listMentors(struct UserNode *users, struct MenteeNode *mentees,
 void _listMenteeVisitor(struct Mentee *m) {
     const char *flag = "ok";
     float att  = atof(m->attendance);
-    float cgpa = atof(m->cgpa);
-    if      (att < 75.0f && cgpa < 7.0f) flag = "both";
-    else if (att < 75.0f)                 flag = "attendance";
-    else if (cgpa < 7.0f)                 flag = "cgpa";
+    float c1   = atof(m->cat1);
+    float c2   = atof(m->cat2);
+    if      (att < 75.0f && (c1 < 25.0f || c2 < 25.0f)) flag = "both";
+    else if (att < 75.0f)                               flag = "attendance";
+    else if (c1 < 25.0f || c2 < 25.0f)                  flag = "cat";
 
-    printf("MENTEE:%s,%s,%s,%s,%s,%s,%s\n",
+    printf("MENTEE:%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
            m->roll, m->name, m->dept, m->cgpa,
-           m->attendance, m->mentor_id, flag);
+           m->attendance, m->mentor_id, flag,
+           m->cat1, m->cat2);
 }
 
 void listMentees(struct MenteeNode *root) {
@@ -138,9 +140,9 @@ void listMentees(struct MenteeNode *root) {
    LIST MEETINGS
 ============================================================= */
 
-void listMeetings(struct Meeting *head, struct MenteeNode *menteeRoot) {
-    if (head == NULL) { printf("EMPTY:no_meetings\n"); return; }
-    for (struct Meeting *m = head; m != NULL; m = m->next) {
+void listMeetings(struct MeetingStack *s, struct MenteeNode *menteeRoot) {
+    if (s->top == NULL) { printf("EMPTY:no_meetings\n"); return; }
+    for (struct Meeting *m = s->top; m != NULL; m = m->next) {
         struct MenteeNode *mn = menteeBstSearch(menteeRoot, m->roll);
         const char *mname = (mn != NULL) ? mn->data.name : "-";
         printf("MEETING:%d,%s,%s,%s,%s,%s,%s,%s\n",
@@ -155,17 +157,17 @@ void listMeetings(struct Meeting *head, struct MenteeNode *menteeRoot) {
 ============================================================= */
 
 void exportReport(struct UserNode *users, struct MenteeNode *mentees,
-                  struct Meeting *meetings) {
+                  struct MeetingStack *meetings) {
 
     printf("REPORT_START\n");
     printf("Mentoring Management System Report\n");
     printf("SSN College of Engineering, Dept. of IT\n---\n");
 
-    _mentorMenteeRoot  = mentees;
-    _mentorMeetingHead = meetings;
+    _mentorMenteeRoot   = mentees;
+    _mentorMeetingStack = meetings;
     userBstInorder(users, _listMentorVisitor);
 
-    printf("---\nFlagged Students (att<75 or cgpa<7.0):\n");
+    printf("---\nFlagged Students (att<75 or cat<25):\n");
 
     int any = 0;
     struct MenteeNode *stack[1024];
@@ -174,10 +176,10 @@ void exportReport(struct UserNode *users, struct MenteeNode *mentees,
     while (cur != NULL || top > 0) {
         while (cur != NULL) { stack[top++] = cur; cur = cur->left; }
         cur = stack[--top];
-        if (atof(cur->data.attendance) < 75.0f || atof(cur->data.cgpa) < 7.0f) {
-            printf("  %s | %s | CGPA:%s | Att:%s%%\n",
+        if (atof(cur->data.attendance) < 75.0f || atof(cur->data.cat1) < 25.0f || atof(cur->data.cat2) < 25.0f) {
+            printf("  %s | %s | CAT1:%s | CAT2:%s | Att:%s%%\n",
                    cur->data.roll, cur->data.name,
-                   cur->data.cgpa, cur->data.attendance);
+                   cur->data.cat1, cur->data.cat2, cur->data.attendance);
             any = 1;
         }
         cur = cur->right;
@@ -199,23 +201,24 @@ int main(int argc, char *argv[]) {
     /* Load */
     struct UserNode   *users    = loadUsers();
     struct MenteeNode *mentees  = loadMentees();
-    struct Meeting    *meetings = loadMeetings(NULL);
+    struct MeetingStack meetings;
+    loadMeetings(&meetings);
 
     /* Dispatch */
     if (strcmp(cmd, "summary") == 0) {
-        summary(users, mentees, meetings);
+        summary(users, mentees, &meetings);
 
     } else if (strcmp(cmd, "list_mentors") == 0) {
-        listMentors(users, mentees, meetings);
+        listMentors(users, mentees, &meetings);
 
     } else if (strcmp(cmd, "list_mentees") == 0) {
         listMentees(mentees);
 
     } else if (strcmp(cmd, "list_meetings") == 0) {
-        listMeetings(meetings, mentees);
+        listMeetings(&meetings, mentees);
 
     } else if (strcmp(cmd, "export_report") == 0) {
-        exportReport(users, mentees, meetings);
+        exportReport(users, mentees, &meetings);
 
     } else {
         printf("ERROR:unknown_command\n");
@@ -225,7 +228,7 @@ int main(int argc, char *argv[]) {
     /* Free */
     userBstFree(users);
     menteeBstFree(mentees);
-    meetingFree(meetings);
+    stackFree(&meetings);
 
     return 0;
 }
