@@ -95,9 +95,10 @@ def parse_mentees(lines):
     for line in lines:
         if line.startswith("DATA:"):
             p = line[5:].split(",")
-            if len(p) >= 5:
+            if len(p) >= 7:
                 out.append({"roll": p[0], "name": p[1], "dept": p[2],
-                            "cgpa": p[3], "attendance": p[4]})
+                            "cgpa": p[3], "attendance": p[4],
+                            "cat1": p[5], "cat2": p[6]})
     return out
 
 
@@ -281,9 +282,10 @@ def mentor_dashboard():
         for line in run(MENTOR_EXE, ["search_mentee", search_regno]):
             if line.startswith("FOUND:"):
                 p = line[6:].split(",")
-                if len(p) >= 5:
+                if len(p) >= 8:
                     search_result = {"roll": p[0], "name": p[1], "dept": p[2],
-                                     "cgpa": p[3], "attendance": p[4]}
+                                     "cgpa": p[3], "attendance": p[4],
+                                     "mentor_id": p[5], "cat1": p[6], "cat2": p[7]}
             elif line.startswith("NOT_FOUND:"):
                 search_miss = True
 
@@ -311,11 +313,13 @@ def mentor_add_mentee():
     roll = request.form.get("roll", "").strip()
     name = request.form.get("name", "").strip().replace(",", " ")
     dept = request.form.get("dept", "").strip().replace(",", " ")
+    cat1 = request.form.get("cat1", "").strip()
+    cat2 = request.form.get("cat2", "").strip()
     cgpa = request.form.get("cgpa", "").strip()
     att  = request.form.get("attendance", "").strip()
-    if not all([roll, name, dept, cgpa, att]):
+    if not all([roll, name, dept, cat1, cat2, cgpa, att]):
         return redirect(url_for("mentor_dashboard", error="All fields are required."))
-    out = first_status(run(MENTOR_EXE, ["add_mentee", mid, name, dept, roll, cgpa, att]))
+    out = first_status(run(MENTOR_EXE, ["add_mentee", mid, name, dept, roll, cat1, cat2, cgpa, att]))
     if out == "SUCCESS:mentee_added":
         return redirect(url_for("mentor_dashboard", message=f"Mentee {name} added."))
     if out == "ERROR:duplicate_roll":
@@ -329,9 +333,11 @@ def mentor_update_mentee():
     roll = request.form.get("roll", "").strip()
     name = request.form.get("name", "").strip().replace(",", " ")
     dept = request.form.get("dept", "").strip().replace(",", " ")
+    cat1 = request.form.get("cat1", "").strip()
+    cat2 = request.form.get("cat2", "").strip()
     cgpa = request.form.get("cgpa", "").strip()
     att  = request.form.get("attendance", "").strip()
-    out = first_status(run(MENTOR_EXE, ["update_mentee", roll, name, dept, cgpa, att]))
+    out = first_status(run(MENTOR_EXE, ["update_mentee", roll, name, dept, cat1, cat2, cgpa, att]))
     if out == "SUCCESS:mentee_updated":
         return redirect(url_for("mentor_dashboard", message="Mentee updated."))
     return redirect(url_for("mentor_dashboard", error=f"Could not update {roll} ({out})."))
@@ -392,10 +398,22 @@ def mentor_schedule_meeting():
         return redirect(url_for("mentor_dashboard",
             message=f"Meeting with {roll} scheduled for {date} {time_v}."))
     if out == "ERROR:not_your_mentee":
-        return redirect(url_for("mentor_dashboard",
-            error=f"{roll} is not assigned to you."))
+        return redirect(url_for("mentor_dashboard", error="This student is not assigned to you."))
     return redirect(url_for("mentor_dashboard",
         error=f"Could not schedule meeting ({out})."))
+
+@app.route("/mentor/complete-meeting", methods=["POST"])
+def mentor_complete_meeting():
+    if not login_required("mentor"): return redirect(url_for("home"))
+    mid        = session["entity_id"]
+    meeting_id = request.form.get("meeting_id")
+    if not meeting_id:
+        return redirect(url_for("mentor_dashboard", _page="meetings", error="Invalid meeting ID."))
+    
+    out = first_status(run(MENTOR_EXE, ["complete_meeting", mid, meeting_id]))
+    if out == "SUCCESS:meeting_completed":
+        return redirect(url_for("mentor_dashboard", _page="meetings", message="Meeting marked as completed."))
+    return redirect(url_for("mentor_dashboard", _page="meetings", error=f"Could not complete meeting ({out})."))
 
 
 # ══════════════════════════════════════════════════════════════
@@ -415,15 +433,15 @@ def mentee_dashboard():
                     "initials": session["username"][:2].upper(),
                     "roll_no": roll, "department": "IT",
                     "mentor_name": "-", "mentor_id": "-",
-                    "cgpa": "-", "attendance": "-"}
+                    "cgpa": "-", "attendance": "-", "cat1": "-", "cat2": "-"}
     for line in raw_profile:
         if line.startswith("PROFILE:"):
             p = line[8:].split(",")
-            if len(p) >= 7:
+            if len(p) >= 9:
                 current_user.update({"roll_no": p[0], "name": p[1],
                                      "department": p[2], "cgpa": p[3],
-                                     "attendance": p[4], "mentor_id": p[5],
-                                     "mentor_name": p[6]})
+                                     "attendance": p[4], "cat1": p[5], "cat2": p[6],
+                                     "mentor_id": p[7], "mentor_name": p[8]})
 
     meetings  = parse_meetings_mentee(raw_meetings)
     requests_ = parse_requests_mentee(raw_requests)
@@ -490,15 +508,16 @@ def manager_dashboard():
     for line in raw_mentees:
         if line.startswith("MENTEE:"):
             p = line[7:].split(",")
-            if len(p) >= 7:
+            if len(p) >= 9:
                 m = {"roll": p[0], "name": p[1], "dept": p[2],
                      "cgpa": p[3], "attendance": p[4],
-                     "mentor_id": p[5], "flag": p[6]}
+                     "mentor_id": p[5], "flag": p[6],
+                     "cat1": p[7], "cat2": p[8]}
                 all_mentees.append(m)
                 if p[6] != "ok":
                     m["flag_label"] = {"attendance": "Low Attendance",
-                                       "cgpa": "Low CGPA",
-                                       "both": "Both Issues"}.get(p[6], p[6])
+                                       "cat": "Low CAT Marks",
+                                       "both": "Multiple Issues"}.get(p[6], p[6])
                     m["flag_class"] = "red" if p[6] == "both" else "amber"
                     flagged.append(m)
 
