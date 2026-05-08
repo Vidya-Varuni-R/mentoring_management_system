@@ -50,6 +50,8 @@ struct Mentee {
     char cgpa[MAX_LEN];
     char attendance[MAX_LEN];
     char mentor_id[MAX_LEN];
+    char cat1[MAX_LEN];
+    char cat2[MAX_LEN];
 };
 
 struct Note {
@@ -112,6 +114,14 @@ struct MenteeNode {
 struct RequestQueue {
     struct Request *head;
     struct Request *tail;
+};
+
+/* =============================================================
+   STACK STRUCT (for Meetings — LIFO)
+============================================================= */
+
+struct MeetingStack {
+    struct Meeting *top;
 };
 
 
@@ -285,8 +295,8 @@ void menteeBstInorder(struct MenteeNode *root, void (*visit)(struct Mentee *)) {
 /* Save helper used by menteeBstSave */
 static FILE *_menteeSaveFp = NULL;
 void _menteeSaveVisitor(struct Mentee *m) {
-    fprintf(_menteeSaveFp, "%s,%s,%s,%s,%s,%s\n",
-            m->roll, m->name, m->dept, m->cgpa, m->attendance, m->mentor_id);
+    fprintf(_menteeSaveFp, "%s,%s,%s,%s,%s,%s,%s,%s\n",
+            m->roll, m->name, m->dept, m->cgpa, m->attendance, m->mentor_id, m->cat1, m->cat2);
 }
 
 void menteeBstSave(struct MenteeNode *root) {
@@ -340,26 +350,34 @@ void queueFree(struct RequestQueue *q) {
 
 
 /* =============================================================
-   LINKED LIST HELPERS — Meetings
+   STACK OPERATIONS — Meetings (LIFO)
 ============================================================= */
 
-void meetingAppend(struct Meeting **head, struct Meeting **tail, struct Meeting *m) {
-    m->next = NULL;
-    if (*head == NULL) {
-        *head = m;
-        *tail = m;
-    } else {
-        (*tail)->next = m;
-        *tail = m;
-    }
+void stackInit(struct MeetingStack *s) {
+    s->top = NULL;
 }
 
-void meetingFree(struct Meeting *head) {
-    while (head != NULL) {
-        struct Meeting *tmp = head;
-        head = head->next;
+void stackPush(struct MeetingStack *s, struct Meeting *m) {
+    m->next = s->top;
+    s->top = m;
+}
+
+struct Meeting *stackPop(struct MeetingStack *s) {
+    if (s->top == NULL) return NULL;
+    struct Meeting *m = s->top;
+    s->top = s->top->next;
+    m->next = NULL;
+    return m;
+}
+
+void stackFree(struct MeetingStack *s) {
+    struct Meeting *cur = s->top;
+    while (cur != NULL) {
+        struct Meeting *tmp = cur;
+        cur = cur->next;
         free(tmp);
     }
+    s->top = NULL;
 }
 
 
@@ -441,6 +459,8 @@ struct MenteeNode *loadMentees(void) {
         t = strtok(NULL, ","); if (!t) continue; copyField(m.cgpa,       t, MAX_LEN);
         t = strtok(NULL, ","); if (!t) continue; copyField(m.attendance, t, MAX_LEN);
         t = strtok(NULL, ","); if (!t) continue; copyField(m.mentor_id,  t, MAX_LEN);
+        t = strtok(NULL, ","); if (t) copyField(m.cat1, t, MAX_LEN); else strcpy(m.cat1, "0");
+        t = strtok(NULL, ","); if (t) copyField(m.cat2, t, MAX_LEN); else strcpy(m.cat2, "0");
 
         root = menteeBstInsert(root, m);
     }
@@ -448,13 +468,13 @@ struct MenteeNode *loadMentees(void) {
     return root;
 }
 
-/* Load meetings.txt into a linked list */
-struct Meeting *loadMeetings(struct Meeting **tail_out) {
-    struct Meeting *head = NULL;
-    struct Meeting *tail = NULL;
+/* Load meetings.txt into a stack */
+void loadMeetings(struct MeetingStack *s) {
+    stackInit(s);
     FILE *fp = fopen(MEETINGS_FILE, "r");
-    if (fp == NULL) { if (tail_out) *tail_out = NULL; return NULL; }
+    if (fp == NULL) return;
 
+    struct Meeting *tail = NULL;
     char line[512];
     while (fgets(line, sizeof(line), fp) != NULL) {
         line[strcspn(line, "\n")] = '\0';
@@ -474,11 +494,15 @@ struct Meeting *loadMeetings(struct Meeting **tail_out) {
         t = strtok(NULL, ","); if (!t) { free(mt); continue; } copyField(mt->agenda,    t, MAX_NOTE_LEN);
         t = strtok(NULL, ","); if (!t) { free(mt); continue; } copyField(mt->status,    t, MAX_LEN);
 
-        meetingAppend(&head, &tail, mt);
+        if (s->top == NULL) {
+            s->top = mt;
+            tail = mt;
+        } else {
+            tail->next = mt;
+            tail = mt;
+        }
     }
     fclose(fp);
-    if (tail_out) *tail_out = tail;
-    return head;
 }
 
 /* Load requests.txt into a queue (FIFO) */
@@ -546,10 +570,10 @@ struct Note *loadNotes(struct Note **tail_out) {
    FILE SAVERS
 ============================================================= */
 
-void saveMeetings(struct Meeting *head) {
+void saveMeetings(struct MeetingStack *s) {
     FILE *fp = fopen(MEETINGS_FILE, "w");
     if (fp == NULL) return;
-    for (struct Meeting *m = head; m != NULL; m = m->next) {
+    for (struct Meeting *m = s->top; m != NULL; m = m->next) {
         fprintf(fp, "%d,%s,%s,%s,%s,%s,%s,%s\n",
                 m->id, m->roll, m->mentor_id, m->date,
                 m->time, m->mode, m->agenda, m->status);
@@ -583,9 +607,9 @@ void saveNotes(struct Note *head) {
    COUNT HELPERS
 ============================================================= */
 
-int countMeetings(struct Meeting *head) {
+int countMeetings(struct MeetingStack *s) {
     int n = 0;
-    for (struct Meeting *m = head; m != NULL; m = m->next) n++;
+    for (struct Meeting *m = s->top; m != NULL; m = m->next) n++;
     return n;
 }
 

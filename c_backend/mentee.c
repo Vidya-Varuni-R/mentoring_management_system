@@ -28,9 +28,10 @@ void viewProfile(struct MenteeNode *menteeRoot, struct UserNode *userRoot,
     struct UserNode *un = userBstSearchByEntity(userRoot, mn->data.mentor_id);
     const char *mentor_name = (un != NULL) ? un->data.username : "-";
 
-    printf("PROFILE:%s,%s,%s,%s,%s,%s,%s\n",
+    printf("PROFILE:%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
            mn->data.roll, mn->data.name, mn->data.dept,
            mn->data.cgpa, mn->data.attendance,
+           mn->data.cat1, mn->data.cat2,
            mn->data.mentor_id, mentor_name);
 }
 
@@ -69,9 +70,9 @@ int requestMeeting(struct RequestQueue *q, struct UserNode *userRoot,
 }
 
 
-void viewMyMeetings(struct Meeting *head, const char *roll) {
+void viewMyMeetings(struct MeetingStack *s, const char *roll) {
     int found = 0;
-    for (struct Meeting *m = head; m != NULL; m = m->next) {
+    for (struct Meeting *m = s->top; m != NULL; m = m->next) {
         if (strcmp(m->roll, roll) != 0) continue;
         printf("MEETING:%d,%s,%s,%s,%s,%s,%s\n",
                m->id, m->date, m->time, m->mentor_id,
@@ -101,7 +102,8 @@ int main(int argc, char *argv[]) {
     /* Load */
     struct UserNode     *users    = loadUsers();
     struct MenteeNode   *mentees  = loadMentees();
-    struct Meeting      *meetings = loadMeetings(NULL);
+    struct MeetingStack  meetings;
+    loadMeetings(&meetings);
     struct RequestQueue  requests;
     loadRequests(&requests);
 
@@ -117,7 +119,7 @@ int main(int argc, char *argv[]) {
                                          argv[5], argv[6], argv[7]);
 
     } else if (strcmp(cmd, "view_meetings") == 0 && argc >= 3) {
-        viewMyMeetings(meetings, argv[2]);
+        viewMyMeetings(&meetings, argv[2]);
 
     } else if (strcmp(cmd, "view_requests") == 0 && argc >= 3) {
         viewMyRequests(&requests, argv[2]);
@@ -133,7 +135,7 @@ int main(int argc, char *argv[]) {
     /* Free */
     userBstFree(users);
     menteeBstFree(mentees);
-    meetingFree(meetings);
+    stackFree(&meetings);
     queueFree(&requests);
 
     return 0;

@@ -183,12 +183,14 @@
           <div class="section-body" style="padding:0">
             <div class="tbl-wrap">
               <table>
-                <thead><tr><th>Roll</th><th>Name</th><th>CGPA</th><th>Attendance</th><th>Issue</th><th>Mentor</th></tr></thead>
+                <thead><tr><th>Roll</th><th>Name</th><th>CAT1</th><th>CAT2</th><th>CGPA</th><th>Attendance</th><th>Issue</th><th>Mentor</th></tr></thead>
                 <tbody>
                   {% for m in flagged[:5] %}
                   <tr>
                     <td><span class="roll-pill">{{ m.roll }}</span></td>
                     <td style="font-weight:600">{{ m.name }}</td>
+                    <td><span class="badge {% if m.cat1|float < 25 %}badge-red{% else %}badge-gold{% endif %}">{{ m.cat1 }}</span></td>
+                    <td><span class="badge {% if m.cat2|float < 25 %}badge-red{% else %}badge-gold{% endif %}">{{ m.cat2 }}</span></td>
                     <td><span class="badge {% if m.cgpa|float < 7 %}badge-red{% else %}badge-gold{% endif %}">{{ m.cgpa }}</span></td>
                     <td><span class="badge {% if m.attendance|float < 75 %}badge-red{% else %}badge-gold{% endif %}">{{ m.attendance }}%</span></td>
                     <td><span class="badge {% if m.flag_class == 'red' %}badge-red{% else %}badge-gold{% endif %}">{{ m.flag_label }}</span></td>
@@ -208,7 +210,7 @@
         <div class="page-header">
           <div>
             <h1 class="page-title">Flagged Students</h1>
-            <p class="page-sub">Students with low CGPA (&lt;7.0) or low attendance (&lt;75%)</p>
+            <p class="page-sub">Students with low CAT Marks (&lt;25) or low attendance (&lt;75%)</p>
           </div>
         </div>
         <div class="section">
@@ -222,13 +224,15 @@
             {% if flagged %}
             <div class="tbl-wrap">
               <table>
-                <thead><tr><th>Roll</th><th>Name</th><th>Dept</th><th>CGPA</th><th>Attendance</th><th>Issue</th><th>Mentor</th></tr></thead>
+                <thead><tr><th>Roll</th><th>Name</th><th>Dept</th><th>CAT1</th><th>CAT2</th><th>CGPA</th><th>Attendance</th><th>Issue</th><th>Mentor</th></tr></thead>
                 <tbody>
                   {% for m in flagged %}
                   <tr>
                     <td><span class="roll-pill">{{ m.roll }}</span></td>
                     <td style="font-weight:600">{{ m.name }}</td>
                     <td>{{ m.dept }}</td>
+                    <td><span class="badge {% if m.cat1|float < 25 %}badge-red{% else %}badge-green{% endif %}">{{ m.cat1 }}</span></td>
+                    <td><span class="badge {% if m.cat2|float < 25 %}badge-red{% else %}badge-green{% endif %}">{{ m.cat2 }}</span></td>
                     <td><span class="badge {% if m.cgpa|float < 7 %}badge-red{% else %}badge-green{% endif %}">{{ m.cgpa }}</span></td>
                     <td><span class="badge {% if m.attendance|float < 75 %}badge-red{% else %}badge-green{% endif %}">{{ m.attendance }}%</span></td>
                     <td><span class="badge {% if m.flag_class == 'red' %}badge-red{% else %}badge-gold{% endif %}">{{ m.flag_label }}</span></td>
@@ -301,13 +305,15 @@
           <div class="section-body" style="padding:0">
             <div class="tbl-wrap">
               <table>
-                <thead><tr><th>Roll</th><th>Name</th><th>Dept</th><th>CGPA</th><th>Attendance</th><th>Mentor</th><th>Status</th></tr></thead>
+                <thead><tr><th>Roll</th><th>Name</th><th>Dept</th><th>CAT1</th><th>CAT2</th><th>CGPA</th><th>Attendance</th><th>Mentor</th><th>Status</th></tr></thead>
                 <tbody>
                   {% for m in all_mentees %}
                   <tr>
                     <td><span class="roll-pill">{{ m.roll }}</span></td>
                     <td style="font-weight:600">{{ m.name }}</td>
                     <td>{{ m.dept }}</td>
+                    <td><span class="badge {% if m.cat1|float >= 25 %}badge-green{% else %}badge-red{% endif %}">{{ m.cat1 }}</span></td>
+                    <td><span class="badge {% if m.cat2|float >= 25 %}badge-green{% else %}badge-red{% endif %}">{{ m.cat2 }}</span></td>
                     <td><span class="badge {% if m.cgpa|float >= 8 %}badge-green{% elif m.cgpa|float >= 7 %}badge-gold{% else %}badge-red{% endif %}">{{ m.cgpa }}</span></td>
                     <td><span class="badge {% if m.attendance|float >= 85 %}badge-green{% elif m.attendance|float >= 75 %}badge-gold{% else %}badge-red{% endif %}">{{ m.attendance }}%</span></td>
                     <td><span class="badge badge-muted">{{ m.mentor_id }}</span></td>

@@ -115,6 +115,18 @@
         <!-- Stat strip -->
         <div class="profile-stats">
           <div class="profile-stat-card">
+            <div class="profile-stat-val" style="color:{% if current_user.cat1 != '-' and current_user.cat1|float >= 25 %}var(--sage-d){% elif current_user.cat1 != '-' %}var(--red){% endif %}">
+              {{ current_user.cat1 }}
+            </div>
+            <div class="profile-stat-label">CAT1</div>
+          </div>
+          <div class="profile-stat-card">
+            <div class="profile-stat-val" style="color:{% if current_user.cat2 != '-' and current_user.cat2|float >= 25 %}var(--sage-d){% elif current_user.cat2 != '-' %}var(--red){% endif %}">
+              {{ current_user.cat2 }}
+            </div>
+            <div class="profile-stat-label">CAT2</div>
+          </div>
+          <div class="profile-stat-card">
             <div class="profile-stat-val" style="color:{% if current_user.cgpa != '-' and current_user.cgpa|float >= 8 %}var(--sage-d){% elif current_user.cgpa != '-' and current_user.cgpa|float >= 7 %}var(--amber){% else %}var(--red){% endif %}">
               {{ current_user.cgpa }}
             </div>
